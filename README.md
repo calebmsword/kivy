@@ -1,6 +1,8 @@
+### Defining the coordinate systems
+
 The `pos` attribute of a Kivy widget refers to the (`x`, `y`) position of the bottom-left corner of that widget. Typically, the origin of this coordinate system is the bottom-left corner of the containing window. 
 
-Coordinates in this coordinate system are said to be in window coordinates. 
+Coordinates in this coordinate system are said to be in **window coordinates**. 
 
 However, there are four “special” widgets which change the origin of the coordinate system for their children. These widgets are 
 
@@ -24,61 +26,47 @@ Then `Widget`’s parent stack would be `BoxLayout`, `AnchorLayout`, `BoxLayout`
 
 Now, if the parent stack of a widget (let’s call it `widget_a`) includes one of the four special widgets, then `widget_a` adopts a new coordinate system. This new coordinate system has an origin located at the bottom-left corner of the first “special” widget in `widget_a`’s parent stack. 
 
-Now we introduce the term parent coordinates. The parent coordinates of `widget_a` depend on whether `widget_a` has a special widget in its parent stack.  
+Now we introduce the term **parent coordinates**. The parent coordinates of `widget_a` depend on whether `widget_a` has a special widget in its parent stack.  
 
-If `widget_a` does not have a special widget in its parent stack: 
+ - If `widget_a` does not have a special widget in its parent stack: 
+   - Then `widget_a`’s parent coordinates are equivalent to window coordinates. 
+ - If `widget_a` has a special widget in its parent stack: 
+   - Then the origin of the parent coordinates for `widget_a` is located at the bottom-left corner of the first special widget in `widget_a`’s parent stack. 
 
-Then `widget_a`’s parent coordinates are equivalent to window coordinates. 
+**It is crucial to understand that the pos attribute of a widget is in the parent coordinates of that widget.**
 
-If `widget_a` has a special widget in its parent stack: 
+The Kivy docs do not mention this, but there is another coordinate system that they use. We will call it **relative coordinates**. The origin of the relative coordinates of `widget_a` is located at the bottom left of `widget_a`. 
 
-Then the origin of the parent coordinates for `widget_a` is located at the bottom-left corner of the first special widget in `widget_a`’s parent stack. 
+Kivy uses one other coordinate system which is referred by two names: **widget coordinates / local coordinates**. The widget/local coordinates of `widget_a` are calculated in the following way: 
 
-Kivy uses one other coordinate system which is referred by two names: widget coordinates / local coordinates. The widget/local coordinates of `widget_a` are calculated in the following way: 
-
-If `widget_a` is a special Widget: 
-
-Then the widget/local coordinates for `widget_a` are relative to the bottom-left corner of widget a. 
-
-If `widget_a` is not a special Widget: 
-
-Then the widget/local coordinates for `widget_a` are equivalent to its parent coordinates. 
-
-It is crucial to understand that the pos attribute of a widget is in the parent coordinates of that widget. 
-
- 
-
-The Kivy docs do not mention this, but there is another coordinate system that they use. We will call it relative coordinates. The origin of the relative coordinates of `widget_a` is located at the bottom left of `widget_a`. 
+ - If `widget_a` is a special Widget: 
+   - Then the widget/local coordinates for `widget_a` has the same origin as its relative coordinates.. 
+ - If `widget_a` is not a special Widget: 
+   - Then the widget/local coordinates for `widget_a` are equivalent to its parent coordinates. 
 
 Window coordinates are an absolute coordinate system. The position (x, y) in window coordinates is the same point on the screen for every widget in a running application. However, parent coordinates, widget/local coordinates, and relative coordinates are always in reference to a particular widget. In other words, each widget has its own parent, widget/local, and relative coordinate system that may have a different origin from that of another widget. 
 
- 
+In summary:
+ - **window coordinates**: The coordinate system whose origin is the bottom left of the application window. This coordinate system is the same for all widgets.
+ - **parent coordinates**: Every widget has its own parent coordinates. If `widget_a` has one of the four "special" widgets (RelativeLayout, Scatter, ScatterLayout, ScrollView) in its parent stack, then the origin of the parent coordinates of `widget_a` is located at the bottom left of the first special widget in `widget_a`'s parent stack. The `pos` attribute of a widget is in that widget's parent coordinates (as are the `x` and `y` attributes).
+ - **relative coordinates**: Every widget has its own relative coordinates. The origin of `widget_a`'s relative coordinates is located at the bottom-left of `widget_a`.
+ - **widget/local coordinates**: Every widget has its own widget/local coordinates. If `widget_a` is a "special" widget, then the origin of its widget/coordinates is the same as that of its relative coordinates. If `widget_a` is not a "special" widget, then the origin of its widget/local coordinates is the same as that of its parent coordinates.
 
---- 
+### Interesting things
 
- 
+- It is interesting to notice that, if there are no special widgets in the application, then window coordinates, widget/local coordinates, and parent coordinates for all widgets have the same origin. 
+- It is also interesting to notice that the widget/local coordinates of the direct parent of `widget_a` are the same as the parent coordinates of `widget_a`. That is, given 
 
-It is interesting to notice that, if there are no special widgets in the application, then window coordinates, widget/local coordinates, and parent coordinates for all widgets have the same origin. 
-
- 
-
-It is also interesting to notice that the widget/local coordinates of the direct parent of `widget_a` are the same as the parent coordinates of `widget_a`. That is, given 
-
+```
 BoxLayout: 
+    Widget: 
+        id: widget_parent 
+        Widget: 
+            id: widget_a
+```
 
-	Widget: 
-
-		id: widget_parent 
-
-		Widget: 
-
-			id: widget_child 
-
-the widget/local coordinate system of the widget with id “widget_parent” has the same origin as the parent coordinate system of “widget_child”. 
-
- 
-
-It is also interesting to notice that, if `widget_a` is a special widget, then its relative coordinates and widget/local coordinates are the same. 
+the widget/local coordinate system of the widget with id `widget_parent` has the same origin as the parent coordinate system of `widget_a`. 
+ - It is also interesting to notice that, if `widget_a` is a special widget, then its relative coordinates and widget/local coordinates are the same. 
 
  
 
@@ -88,7 +76,38 @@ It is also interesting to notice that, if `widget_a` is a special widget, then i
 
 Every widget has an API for converting positions to different coordinate systems. 
 
+```mermaid
+ flowchart LR
  
+    subgraph " "
+      direction LR
+      
+      subgraph "  "
+        WINDOW(Window)
+      end
+      
+      subgraph "   "
+        RELATIVE(Relative)
+        WIDGET("Widget/Local")
+      end
+      
+      subgraph "     "
+        PARENT(Parent)
+      end
+      
+    end
+    
+    WINDOW -- "to_widget(x, y, relative=True)" --> RELATIVE
+    WINDOW -- "to_widget(x, y)" --> WIDGET
+    RELATIVE -- "to_window(x, y, initial=False, relative=True)" --> WINDOW
+    RELATIVE -- "to_parent(x, y, relative=True)" --> PARENT
+    WIDGET -- "to_window(x, y, initial=False)" --> WINDOW
+    WIDGET -- "to_parent(x, y)" --> PARENT
+    PARENT -- "to_local(x, y, relative=True)" --> RELATIVE
+    PARENT -- "to_local(x, y)" --> WIDGET
+    PARENT -- "to_window(x, y)" --> WINDOW
+    
+```
 
 to_local(x, y, relative=False) 
 
