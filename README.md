@@ -83,16 +83,16 @@ Every widget has an API for converting positions to different coordinate systems
       direction LR
       
       subgraph "  "
-        WINDOW(Window)
+        WINDOW(Window coordinates)
       end
       
       subgraph "   "
-        RELATIVE(Relative)
-        WIDGET("Widget/Local")
+        RELATIVE(Relative coordinates)
+        WIDGET("Widget/Local coordinates")
       end
       
       subgraph "     "
-        PARENT(Parent)
+        PARENT(Parent coordinates)
       end
       
     end
