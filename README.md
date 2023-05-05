@@ -4,7 +4,7 @@ Subsections:
 - [Defining the coordinate systems](#defining-the-coordinate-systems)
 - [Consequences of the definitions](#consequences-of-the-definitions)
 - [Coordinate transformation API](#coordinate-transformation-api)
-- [Converting coordinates between widgets](#covnerting-coordinates-between-widgets)
+- [Converting coordinates between widgets](#converting-coordinates-between-widgets)
 
 ### Defining the coordinate systems
 
