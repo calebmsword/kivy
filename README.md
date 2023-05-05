@@ -1,6 +1,10 @@
 # Kivy Coordinates
 
+Subsections:
 - [Defining the coordinate systems](#defining-the-coordinate-systems)
+- [Consequences of the definitions](#consequences-of-the-definitions)
+- [Coordinate transformation API](#coordinate-transformation-api)
+- [Converting coordinates between widgets](#covnerting-coordinates-between-widgets)
 
 ### Defining the coordinate systems
 
@@ -56,7 +60,7 @@ In summary:
  - **relative coordinates**: Every widget has its own relative coordinates. The origin of `widget_a`'s relative coordinates is located at the bottom-left of `widget_a`.
  - **widget/local coordinates**: Every widget has its own widget/local coordinates. If `widget_a` is a "special" widget, then the origin of its widget/coordinates is the same as that of its relative coordinates. If `widget_a` is not a "special" widget, then the origin of its widget/local coordinates is the same as that of its parent coordinates.
 
-### Interesting things
+### Consequences of the definitions
 
 - It is interesting to notice that, if there are no special widgets in the application, then window coordinates, widget/local coordinates, and parent coordinates for all widgets have the same origin. 
 - It is also interesting to notice that the widget/local coordinates of the direct parent of `widget_a` are the same as the parent coordinates of `widget_a`. That is, given 
@@ -151,7 +155,7 @@ For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position
    - That is, `x`, `y` are assumed to be in the relative coordinates of the direct parent of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
    - Never do this. If you ever need this very specific conversion, just use `widget_a.parent.to_window(x, y, relative=True)`, which is more declarative. 
 
-### A useful snipper
+### Converting coordinates between widgets
 
 It is a code smell if one widget directly accesses the position of another widget. For example, the following code attempts to place `widget_b` directly next to `widget_a`. 
 
@@ -179,10 +183,6 @@ def convert_pos(*, input_widget, output_widget):
 	# the widget/local coordinates of the parent of output_widget are the same as the parent coordinates of output_widget. 
 	return output_widget.parent.to_widget(*window_coords) 
 ```
- 
-
-
-
  
 
 For example, `convert_pos(input_widget=widget_a, output_widget=widget_b)` returns a tuple describing the position of `widget_a` in the parent coordinates of `widget_b`. 
