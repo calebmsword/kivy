@@ -188,7 +188,7 @@ def convert_pos(*, input, output):
 ```
  
 
-For example, `convert_pos(input_widget=widget_a, output_widget=widget_b)` returns a tuple describing the position of `widget_a` in the parent coordinates of `widget_b`. A simple usage of this snippet could be like
+For example, `convert_pos(input=widget_a, output=widget_b)` returns a tuple describing the position of `widget_a` in the parent coordinates of `widget_b`. A simple usage of this snippet could be like
 
 ```kvlang
 #: import where.your.internal.utils.package.is.convert_pos
