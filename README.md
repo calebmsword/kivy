@@ -186,7 +186,7 @@ def convert_pos(*, input, output):
 	
 	# the widget/local coordinates of the parent of output are the 
 	# same as the parent coordinates of output 
-	# 	Also, kivy Vectors can be used wherever a pos tuple can 
+	#   Also, kivy Vectors can be used wherever a pos tuple can 
 	# be used
 	return Vector(output.parent.to_widget(*window_coords)) 
 ```
