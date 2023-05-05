@@ -175,6 +175,8 @@ However, the `pos` attribute (and the `x` and `y` attributes) of `widget_a` and 
 It is safest to always use the following code snippet when one widget accesses the position of another widget. 
 
 ```python
+from kivy.vector import Vector
+
 def convert_pos(*, input, output):  
 	"""
 	Takes the pos attribute of input and returns a tuple representing 
@@ -184,7 +186,9 @@ def convert_pos(*, input, output):
 	
 	# the widget/local coordinates of the parent of output are the 
 	# same as the parent coordinates of output 
-	return output.parent.to_widget(*window_coords) 
+	# 	Also, kivy Vectors can be used wherever a pos tuple can 
+	# be used
+	return Vector(output.parent.to_widget(*window_coords)) 
 ```
  
 
@@ -200,6 +204,6 @@ BoxLayout:
     Widget:
         id: widget_b 
 	# place widget_b directly to the right of widget_a
-	x: convert_pos(input=widget_a, output=widget_b)[0] + widget_a.width
-        y: convert_pos(input=widget_a, output=widget_b)[1]
+	x: convert_pos(input=widget_a, output=widget_b).x + widget_a.width
+        y: convert_pos(input=widget_a, output=widget_b).y
 ```
