@@ -177,33 +177,19 @@ It is safest to always use the following code snippet when one widget accesses t
 ```python
 from kivy.vector import Vector
 
-def convert_pos(*, pos_of, convert_to):
+def convert_pos(*, input_widget, output_widget):
     """
-    Takes the pos attribute of pos_of and returns a tuple representing
-    that position in the parent coordinates of convert_to.
+    Takes the pos attribute of input_widget and returns a Vector representing
+    that position in the parent coordinates of output_widget.
     """
-    window_coords = pos_of.to_window(*pos_of.pos)
+    window_coords = input_widget.to_window(*input_widget.pos)
 
-    # the widget/local coordinates of the parent of output are the
-    # same as the parent coordinates of output
-    #   Also, kivy Vectors can be used wherever a pos tuple can
+    # the widget/local coordinates of the parent of output_widget are the
+    # same as the parent coordinates of output_widget
+    #   Also, kivy Vectors can be used wherever a pos attribute can
     # be used
-    return Vector(convert_to.parent.to_widget(*window_coords))
+    return Vector(output_widget.parent.to_widget(*window_coords))
 ```
  
 
-For example, `convert_pos(pos_of=widget_a, convert_to=widget_b)` returns a tuple describing the position of `widget_a` in the parent coordinates of `widget_b`. A simple usage of this snippet could be like
-
-```kvlang
-#: import convert_pos where.your.internal.utils.package.is.convert_pos
-
-BoxLayout:
-    RelativeLayout:
-        Widget: 
-            id: widget_a
-    Widget:
-        id: widget_b 
-	# place widget_b directly to the right of widget_a
-	x: convert_pos(pos_of=widget_a, convert_to=widget_b).x + widget_a.width
-        y: convert_pos(pos_of=widget_a, convert_to=widget_b).y
-```
+For example, `convert_pos(posinput_widget_of=widget_a, output_widget=widget_b)` returns a tuple describing the position of `widget_a` in the parent coordinates of `widget_b`.
