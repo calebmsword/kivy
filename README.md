@@ -65,7 +65,7 @@ In summary:
 - It is interesting to notice that, if there are no special widgets in the application, then window coordinates, widget/local coordinates, and parent coordinates for all widgets have the same origin. 
 - It is also interesting to notice that the widget/local coordinates of the direct parent of `widget_a` are the same as the parent coordinates of `widget_a`. That is, given 
 
-```
+```kvlang
 BoxLayout: 
     Widget: 
         id: widget_parent 
