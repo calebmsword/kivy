@@ -56,7 +56,7 @@ Window coordinates are an absolute coordinate system. The position (x, y) in win
 
 In summary:
  - **window coordinates**: The coordinate system whose origin is the bottom left of the application window. This coordinate system is the same for all widgets.
- - **parent coordinates**: Every widget has its own parent coordinates. If `widget_a` has one of the four "special" widgets (RelativeLayout, Scatter, ScatterLayout, ScrollView) in its parent stack, then the origin of the parent coordinates of `widget_a` is located at the bottom left of the first special widget in `widget_a`'s parent stack. The `pos` attribute of a widget is in that widget's parent coordinates (as are the `x` and `y` attributes).
+ - **parent coordinates**: Every widget has its own parent coordinates. If `widget_a` has one of the four "special" widgets (RelativeLayout, Scatter, ScatterLayout, ScrollView) in its parent stack, then the origin of the parent coordinates of `widget_a` is located at the bottom left of the first special widget in `widget_a`'s parent stack. If `widget_a` does not have any "special" widgets in its parent stack, then its parent coordinates have the same origin as the application's window coordinates. The `pos` attribute of a widget is in that widget's parent coordinates (as are the `x` and `y` attributes).
  - **relative coordinates**: Every widget has its own relative coordinates. The origin of `widget_a`'s relative coordinates is located at the bottom-left of `widget_a`.
  - **widget/local coordinates**: Every widget has its own widget/local coordinates. If `widget_a` is a "special" widget, then the origin of its widget/coordinates is the same as that of its relative coordinates. If `widget_a` is not a "special" widget, then the origin of its widget/local coordinates is the same as that of its parent coordinates.
 
@@ -165,7 +165,8 @@ BoxLayout:
         Widget: 
             id: widget_a
     Widget:
-        id: widget_b 
+        id: widget_b
+	# attempt to put widget_b directly right of widget_a
         pos: widget_a.x + widget_a.width, widget_a.y 
 ```
  
@@ -174,15 +175,31 @@ However, the `pos` attribute (and the `x` and `y` attributes) of `widget_a` and 
 It is safest to always use the following code snippet when one widget accesses the position of another widget. 
 
 ```python
-def convert_pos(*, input_widget, output_widget):  
+def convert_pos(*, input, output):  
 	"""
-	Takes the pos attribute of input_widget and returns a tuple represening that position in the parent coordinates of output_widget.
+	Takes the pos attribute of input and returns a tuple representing 
+	that position in the parent coordinates of output.
 	"""
-	window_coords = input_widget.to_window(*input_widget.pos)
+	window_coords = input.to_window(*input_widget.pos)
 	
-	# the widget/local coordinates of the parent of output_widget are the same as the parent coordinates of output_widget. 
-	return output_widget.parent.to_widget(*window_coords) 
+	# the widget/local coordinates of the parent of output are the 
+	# same as the parent coordinates of output 
+	return output.parent.to_widget(*window_coords) 
 ```
  
 
-For example, `convert_pos(input_widget=widget_a, output_widget=widget_b)` returns a tuple describing the position of `widget_a` in the parent coordinates of `widget_b`. 
+For example, `convert_pos(input_widget=widget_a, output_widget=widget_b)` returns a tuple describing the position of `widget_a` in the parent coordinates of `widget_b`. A simple usage of this snippet could be like
+
+```kvlang
+#: import where.your.internal.utils.package.is.convert_pos
+
+BoxLayout:
+    RelativeLayout:
+        Widget: 
+            id: widget_a
+    Widget:
+        id: widget_b 
+	# place widget_b directly to the right of widget_a
+	x: convert_pos(input=widget_a, output=widget_b)[0] + widget_a.width
+        y: convert_pos(input=widget_a, output=widget_b)[1]
+```
