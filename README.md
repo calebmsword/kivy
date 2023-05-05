@@ -1,3 +1,7 @@
+# Kivy Coordinates
+
+- [Defining the coordinate systems](#defining-the-coordinate-systems)
+
 ### Defining the coordinate systems
 
 The `pos` attribute of a Kivy widget refers to the (`x`, `y`) position of the bottom-left corner of that widget. Typically, the origin of this coordinate system is the bottom-left corner of the containing window. 
@@ -70,11 +74,9 @@ the widget/local coordinate system of the widget with id `widget_parent` has the
 
  
 
---- 
+### Coordinate transformation API
 
- 
-
-Every widget has an API for converting positions to different coordinate systems. 
+Every widget has an API for converting positions to different coordinate systems. The methods are defined in the widget class and always take at least two arguments (`x` and `y`). The following image represents the API diagrammatically. A more precise description of the API will follow.
 
 ```mermaid
  flowchart LR
@@ -109,107 +111,77 @@ Every widget has an API for converting positions to different coordinate systems
     
 ```
 
-to_local(x, y, relative=False) 
+`to_local(x, y, relative=False)` 
 
-If relative is set to False (the default value): 
-
-x, y are assumed to be in the parent coordinates of the widget which calls the method. It returns a tuple that converts this position into widget/local coordinates of the widget which calls the method. 
+ - If `relative` is set to `False` (the default value): 
+   - `x`, `y` are assumed to be in the parent coordinates of the widget which calls the method. It returns a tuple that converts this position into widget/local coordinates of the widget which calls the method. 
  
-For example, widgetA.to_local(*widgetA.pos) converts WidgetA’s position into the local coordinates of widgetA. (Remember that the pos attribute is always in parent coordinates). 
+For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position into its local coordinates. (Remember that the pos attribute of a widget is always in that widget's parent coordinates). 
 
-If relative is set to True: 
-
-x, y are assumed to be in the parent coordinates of the widget which calls the method. Then the returned tuple will be in relative coordinates of the widget which calls the method. 
+ - If `relative` is set to `True`: 
+   - `x`, `y` are assumed to be in the parent coordinates of the widget which calls the method. Then the returned tuple will be in relative coordinates of the widget which calls the method. 
 
  
 
-to_parent(x, y, relative=False) 
+`to_parent(x, y, relative=False)` 
 
-If relative is set to False (the default value): 
+ - If `relative` is set to `False` (the default value): 
+   - `x`, `y` are assumed to be in the local coordinates of the widget which calls the method. It returns a tuple that is this position in the parent coordinates of the widget which calls the method. 
+ - If `relative` is set to `True`: 
+   - `x`, `y` are assumed to be relative coordinates of the widget which calls the method. It returns a tuple that is this position in the parent coordinates of the widget which calls the method. 
 
-x, y are assumed to be in the local coordinates of the widget which calls the method. It returns a tuple that is this position in the parent coordinates of the widget which calls the method. 
 
-If relative is set to True: 
-
-x, y are assumed to be relative coordinates of the widget which calls the method. It returns a tuple that is this position in the parent coordinates of the widget which calls the method. 
-
- 
-
-to_widget(x, y, relative=False) 
-
-If relative is set to False (the default value): 
-
-x, y are assumed to be in window coordinates. It returns a tuple that is this position in the widget/local coordinates of the widget which calls the method. 
-
-If relative is set to True: 
-
-x, y are assumed to be in window coordinates. It returns a tuple that is this position in the relative coordinates of the widget which calls the method. 
+`to_widget(x, y, relative=False)`
+ - If `relative` is set to `False` (the default value):
+   - `x`, `y` are assumed to be in window coordinates. It returns a tuple that is this position in the widget/local coordinates of the widget which calls the method. 
+ - If `relative` is set to `True`:
+   - `x`, `y` are assumed to be in window coordinates. It returns a tuple that is this position in the relative coordinates of the widget which calls the method. 
 
  
+`to_window(x, y, initial=True, relative=False)`
+ - If `initial` is set to `True` (the default value): 
+   - `x`, `y` are assumed to be in parent coordinates of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
+ - If `initial` is set to `False`: 
+   - If `relative` is set to `False` (the default value): 
+     - `x`, `y` are assumed to be in widget/local coordinates of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
+   - If `relative` is set to `True`: 
+     - `x`, `y` are assumed to be in the relative coordinates of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
+ - What are we to make of the case where `initial` is `True` and `relative` is `True`? 
+   - If we inspect Kivy’s source code, `widget_a.to_window(x, y, initial=True, relative=True)` is equivalent to calling `widget_a.parent.to_window(x, y, relative=True)`. 
+   - That is, `x`, `y` are assumed to be in the relative coordinates of the direct parent of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
+   - Never do this. If you ever need this very specific conversion, just use `widget_a.parent.to_window(x, y, relative=True)`, which is more declarative. 
 
-to_window(x, y, initial=True, relative=False) 
+### A useful snipper
 
-If initial is set to True (the default value): 
+It is a code smell if one widget directly accesses the position of another widget. For example, the following code attempts to place `widget_b` directly next to `widget_a`. 
 
-x, y are assumed to be in parent coordinates of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
-
-If initial is set to False: 
-
-If relative is set to False (the default value): 
-
-x, y are assumed to be in widget/local coordinates of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
-
-If relative is set to True: 
-
-x, y are assumed to be in the relative coordinates of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
-
-What are we to make of the case where initial is True and relative is True? 
-
-If we inspect Kivy’s source code, widget_a.to_window(x, y, initial=True, relative=True) is equivalent to calling widget_a.parent.to_window(x, y, relative=True) 
-
-Then x, y are assumed to be in the relative coordinates of the direct parent of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
-
-Never do this. If you ever need this very specific conversion, just use widget_a.parent.to_window(x, y, relative=True), which is more declarative. 
-
+```kvlang
+BoxLayout:
+    RelativeLayout:
+        Widget: 
+            id: widget_a
+    Widget:
+        id: widget_b 
+        pos: widget_a.x + widget_a.width, widget_a.y 
+```
  
-
---- 
-
- 
-
-It is a code smell if one widget directly accesses the position of another widget. For example, the following code attempts to place widget_b directly next to widget_a. 
-
- 
-
-BoxLayout: 
-
-	RelativeLayout: 
-
-Widget: 
-
-		id: widget_a 
-
-	Widget: 
-
-		id: widget_b 
-
-		pos: widget_a.x + widget_a.width, widget_a.y 
-
- 
-
-However, the pos attribute (and the x and y attributes) of `widget_a` and widget_b are in different coordinate systems because `widget_a` is in a RelativeLayout (one of the “special” widgets) while `widget_b` is not. This will not place `widget_b` in the expected location. 
+However, the `pos` attribute (and the `x` and `y` attributes) of `widget_a` and `widget_b` are in different coordinate systems because `widget_a` is in a `RelativeLayout` (one of the “special” widgets) while `widget_b` is not. This will not place `widget_b` in the expected location. 
 
 It is safest to always use the following code snippet when one widget accesses the position of another widget. 
 
+```python
 def convert_pos(*, input_widget, output_widget):  
-
-window_coords = input_widget.to_window(*input_widget.pos) 
-
+	"""
+	Takes the pos attribute of input_widget and returns a tuple represening that position in the parent coordinates of output_widget.
+	"""
+	window_coords = input_widget.to_window(*input_widget.pos)
+	
+	# the widget/local coordinates of the parent of output_widget are the same as the parent coordinates of output_widget. 
+	return output_widget.parent.to_widget(*window_coords) 
+```
  
 
-# the widget/local coordinates of the parent of output_widget are the same as the parent 		# coordinates of output_widget. 
 
-return output_widget.parent.to_widget(*window_coords) 
 
  
 
