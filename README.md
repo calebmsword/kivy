@@ -192,4 +192,4 @@ def convert_pos(*, input_widget, output_widget):
 ```
  
 
-For example, `convert_pos(posinput_widget_of=widget_a, output_widget=widget_b)` returns a tuple describing the position of `widget_a` in the parent coordinates of `widget_b`.
+For example, `convert_pos(posinput_widget_of=widget_a, output_widget=widget_b)` returns a Vector describing the position of `widget_a` in the parent coordinates of `widget_b`.
