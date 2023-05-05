@@ -160,7 +160,7 @@ For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position
 It is a code smell if one widget directly accesses the position of another widget. For example, the following code attempts to place `widget_b` directly next to `widget_a`. 
 
 ```kvlang
-BoxLayout:
+Widget:
     RelativeLayout:
         Widget: 
             id: widget_a
@@ -170,7 +170,7 @@ BoxLayout:
         pos: widget_a.x + widget_a.width, widget_a.y 
 ```
  
-However, the `pos` attribute (and the `x` and `y` attributes) of `widget_a` and `widget_b` are in different coordinate systems because `widget_a` is in a `RelativeLayout` (one of the “special” widgets) while `widget_b` is not. This will not place `widget_b` in the expected location. 
+However, the `pos` attribute (and the `x` and `y` attributes) of `widget_a` and `widget_b` are in different coordinate systems because `widget_a` is in a `RelativeLayout` (one of the “special” widgets) while `widget_b` is not. This may not place `widget_b` in the expected location. 
 
 It is safest to always use the following code snippet when one widget accesses the position of another widget. 
 
@@ -186,10 +186,9 @@ def convert_pos(*, input_widget, output_widget):
 
     # The widget/local coordinates of the parent of output_widget are the
     #   same as the parent coordinates of output_widget
-    # Also, kivy Vectors can be used wherever a pos attribute can
-    #   be used
+    # Also, kivy Vectors are a subclass of Python lists.
     return Vector(output_widget.parent.to_widget(*window_coords))
 ```
  
 
-For example, `convert_pos(posinput_widget_of=widget_a, output_widget=widget_b)` returns a Vector describing the position of `widget_a` in the parent coordinates of `widget_b`.
+For example, `convert_pos(input_widget_of=widget_a, output_widget=widget_b)` returns a Vector describing the position of `widget_a` in the parent coordinates of `widget_b`.
