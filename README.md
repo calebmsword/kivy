@@ -184,10 +184,10 @@ def convert_pos(*, input_widget, output_widget):
     """
     window_coords = input_widget.to_window(*input_widget.pos)
 
-    # the widget/local coordinates of the parent of output_widget are the
-    # same as the parent coordinates of output_widget
-    #   Also, kivy Vectors can be used wherever a pos attribute can
-    # be used
+    # The widget/local coordinates of the parent of output_widget are the
+    #   same as the parent coordinates of output_widget
+    # Also, kivy Vectors can be used wherever a pos attribute can
+    #   be used
     return Vector(output_widget.parent.to_widget(*window_coords))
 ```
  
