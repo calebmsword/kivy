@@ -2,11 +2,11 @@
 This README contains documentation about some odds and ends of Kivy but the official documentation does not describe in a satisfactory manner.
 
 Chapters:
-- [GridLayouts and size_hint](#kivy-gridlayouts-and-size_hint)
+- [GridLayouts and size_hint](#kivy-gridlayout-and-size_hint)
 - [Kivy Coordinates](#kivy-coordinates)
 
 
-# Kivy GridLayouts and size_hint
+# Kivy GridLayout and size_hint
 [Back to title](#kivy-notes)
 
 A gridLayout creates slots for all of its children. Each child widget is placed in the bottom left corner of its slot. Usually, widgets will take of all the space in the slot, but it is possible for a widget to take up less than the full area. Usually, it is not possible to make a widget take more space that what is available in the slot because the grid layout will increase the size of the row/column containing the widget to ensure that widget can fit in its slot. We will mention the exception to this rule later.
