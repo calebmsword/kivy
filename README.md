@@ -7,6 +7,8 @@ Chapters:
 
 
 # Kivy GridLayouts and size_hint
+[Back to title](#kivy-notes)
+
 A gridLayout creates slots for all of its children. Each child widget is placed in the bottom left corner of its slot. Usually, widgets will take of all the space in the slot, but it is possible for a widget to take up less than the full area. Usually, it is not possible to make a widget take more space that what is available in the slot because the grid layout will increase the size of the row/column containing the widget to ensure that widget can fit in its slot. We will mention the exception to this rule later.
 
 There are three ways to determine the height of a row if the value of row_force_default is False (its default value):
@@ -142,6 +144,7 @@ If a widget has a non-None size_hint_y, then the gridLayout will ignore any assi
 One final thing: if the row_force_default property of the gridLayout is set to True, the height of each slot is set to row_default_height no matter what, no questions asked. However, this means that if you set the size_hint to (None, None) and then assign a size to the widget, you can make the widget have any width and height that you want. This is the only way to exceed the size of the slot for the widget.
 
 # Kivy Coordinates
+[Back to title](#kivy-notes)
 
 Subsections:
 - [Defining the coordinate systems](#defining-the-coordinate-systems)
