@@ -2,7 +2,8 @@
 This README contains documentation about some odds and ends of Kivy but the official documentation does not describe in a satisfactory manner.
 
 Chapters:
-- [Kivy GridLayouts and size_hint](#kivy-gridlayouts-and-size_hint)
+- [GridLayouts and size_hint](#kivy-gridlayouts-and-size_hint)
+- [Kivy Coordinates](#kivy-coordinates)
 
 
 # Kivy GridLayouts and size_hint
