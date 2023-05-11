@@ -154,6 +154,7 @@ Subsections:
 
 ### Defining the coordinate systems
 [Back to chapter start](#kivy-coordinates)
+
 [Back to title](#kivy-notes)
 
 The `pos` attribute of a Kivy widget refers to the (`x`, `y`) position of the bottom-left corner of that widget. Typically, the origin of this coordinate system is the bottom-left corner of the containing window. 
@@ -210,6 +211,7 @@ In summary:
 
 ### Consequences of the definitions
 [Back to chapter start](#kivy-coordinates)
+
 [Back to title](#kivy-notes)
 
 - It is interesting to notice that, if there are no special widgets in the application, then window coordinates, widget/local coordinates, and parent coordinates for all widgets have the same origin. 
@@ -230,6 +232,7 @@ the widget/local coordinate system of the widget with id `widget_parent` has the
 
 ### Coordinate transformation API
 [Back to chapter start](#kivy-coordinates)
+
 [Back to title](#kivy-notes)
 
 Every widget has an API for converting positions to different coordinate systems. The methods are defined in the widget class and always take at least two arguments (`x` and `y`). The following image represents the API diagrammatically. A more precise description of the API will follow.
@@ -309,6 +312,7 @@ For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position
 
 ### Converting coordinates between widgets
 [Back to chapter start](#kivy-coordinates)
+
 [Back to title](#kivy-notes)
 
 It is a code smell if one widget directly accesses the position of another widget. For example, the following code attempts to place `widget_b` directly next to `widget_a`. 
