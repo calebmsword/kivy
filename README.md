@@ -41,9 +41,9 @@ Then the slot for the button in row 0 will have a minimum height of 200, the slo
 
 The heights of rows 0 and 1 might actually be larger than 200 and 100, respectively, because the child widgets in each row have the default `size_hint` value of `(1, 1)`. This will only be the case if the height of the GridLayout exceeds that of the sum of each of its rows (600 in this case). We will go into detail soon about how `size_hint` affects the height later.
 
-If the value of `row_force_default` is `True`, then the GridLayout will make the height of each slot the value of `row_default_height` no matter what. It doesn't matter if there are keys in the `rows_minimum dictionary`, nor does it matter what the  `size_hint` or `size` of any child widgets are. If `row_force_default` is `True`, then the value of `row_default_height` WILL be the height for EVERY row. (Note that, by default, `row_default_height` is `0`, so if you set `row_force_default` to `True` without assigning a value to `row_default_height`, the GridLayout will have a `height` of `0` and not show up on the app at all!)
+If the value of `row_force_default` is `True`, then the GridLayout will make the height of each slot in row `n` the value mapped by `n` in `rows_minimum` ictionary. If the key `n` is not in `rows_minimum`, then it will use the value of `row_default_height` for that row. If `row_force_default` is true, then  the `size_hint` or `size` of any child widgets has no influence on the height of the slots in any row.(Note that, by default, `rows_minimum` is an empty dictionary and `row_default_height` is `0`, so if you set `row_force_default` to `True` without assigning a value to `row_default_height` or `rows_minimum`, the GridLayout will have a `height` of `0` and not show up on the app at all!)
 
-If the GridLayout height is smaller than the sum of the heights of the rows, each row will still have its minimum height. The GridLayout respects the minimum height for each row religiously, even if this requires positioning widgets (or parts of widgets) outside of the Window.
+If the GridLayout height is smaller than the sum of the minimum heights of the rows, each row will still have its minimum height. The GridLayout respects the minimum height for each row religiously, even if this requires positioning widgets (or parts of widgets) outside of the Window.
 
 Now to discuss how GridLayouts deal with `size_hint`. To do this, we will introduce the concept of allotted height. The allotted height for a GridLayout without any padding or spacing is calculated in the following way:
 $$(\textnormal{GridLayout height}) - \sum(\textnormal{mininum height for each row})$$
@@ -143,9 +143,45 @@ If a widget has a non-`None` `size_hint_y`, then the GridLayout will ignore any 
 
 <img src="https://github.com/calebmsword/kivy/assets/85499281/cbfa4692-b91f-46ca-9f9d-f30de60e15a7" height=600 />
 
-One final thing: if the `row_force_default` property of the gridLayout is set to `True`, the height of each slot is set to `row_default_height` no matter what, no questions asked. However, this means that if you set the `size_hint` to (`None`, `None`) and then assign a size to the widget, you can make the widget have any `width` and `height` that you want. This is the only way to exceed the size of the slot for the widget.
+One final thing: if the `row_force_default` property of the gridLayout is set to `True`, the height of the `n`th slot is set to the value mapped by `n` in `rows_minimum`, unless `rows_minimum` does not contain `n` as a key, in which case the slot is set to `row_default_height`. However, this means that if you set the `size_hint` to (`None`, `None`) and then assign a size to the widget, you can make the widget have any `width` and `height` that you want. This is the only way to exceed the size of the slot for the widget.
 
-The behavior of widths and columns follows in the natural way. Just copy-paste what is written above, but replace every "row" with "column", every `row` with `col`, every "height" with "width", and so on.
+To summarize:
+
+ - Rows are 0-indexed, so row 0 is the first row, row 1 is the second row, etc. No matter the orientation of the GridLayout (`tb-lr`, `bt-lr`, etc), the topmost row is row 0.
+ - GridLayouts create slots for each of their child widgets. The slots have the same height for every row. Widgets are placed in the bottom left of each slot. 
+ - If the widget has a value for `size_hint_y` that is not `None`, then it will take the full height of the slot. If the `size_hint_y` is `None`, then it is possible for the widget to take less than or more than the height of the slot.
+ - If `force_row_default` set to `True`, then the height of the slots for row `n` is set to the value mapped by `n` in `rows_minimum` if `rows_minimum` contains the key `n`. If `rows_minimum` does not contain the key for `n`, then the height of the slots for row `n` is determined by the value of `row_height_default`.
+   - If a child in row `n` has a `size_hint_y` set to `None`, then the value of its `height` determines the height of the widget. If `height` is less than the height of the slot, then the widget will not fill the entire vertical space of the slot. If the `height` exceeds the height of the slot, then the widget will exceed the space of the slot.
+   - If the child has any non-`None` value for `size_hint_y`, then it will fill the entire height of the slot.
+ - If `force_row_default` is set to `False`:
+   - The GridLayout finds the largest of the following three values for the `n`th row and sets that value as the minimum height of that row.
+     - If the key `n` exists in `rows_minimum`, then it uses the value mapped by `n`. If the key `n` is not in `rows_minimum`, then negative infinity.
+     - If at least one child in the `n`th row has a `size_hint_y` set to `None`, then it uses the maximum height of every one of these children. If there are no children with a `size_hint_y` set to `None` in the `n`th row, then negative infinity.
+     - The value of `row_height_default`.
+   - The GridLayout then determines the allotted height for each row. This is calculated by subtracting the following values from the height of the GridLayout:
+     - The padding_top of the GridLayout (`padding[1]`)
+     - The padding_bottom of the GridLayout (`padding[3]`)
+     - The spacing between each row (`spacing[1]` * (number of rows - 1))
+     - The sum of minimum heights for each row
+   - If the allotted height is greater than 0, then the GridLayout provides additional height to the rows through the following process.
+     - If every widget in the `n`th row has a `size_hint_y` with a value of `None`, then no additional height is added to this row.
+     - If at least one widget in row `n` has a non-`None` `size_hint_y`:
+       - The GridLayout calculates the sum of maximum `size_hint_y`'s for each row that contains at least one widget with a non-`None` `size_hint_y`
+       - The GridLayout calculates the ratio of the maximum `size_hint_y` in row `n` to the sum of all maximum `size_hint_y`'s.
+       - The GridLayout multiplies this ratio by the allotted height and adds that to the minimum height of row `n`.
+ 
+ When keeping track of these behaviors, it is extremely useful to remember the following default values for properties of GridLayouts and widgets:
+  - GridLayout:
+    - `force_row_default`: `False`
+    - `rows_minimum`: `{}`
+    - `row_height_default`: 0
+  - Widget:
+    - `size_hint`: `(1, 1)`
+      - Consequently, `size_hint_y`: `1`
+    - `size`: `(100, 100)`
+      - Consequently, `height`: `100`
+ 
+The behavior of widths and columns follows in the natural way. Just copy-paste what is written above, but replace every "row" with "column", every `row` with `col`, every "height" with "width", every "vertical" with "horizontal", and so on.
 
 # Kivy Coordinates
 [Back to title](#kivy-notes)
