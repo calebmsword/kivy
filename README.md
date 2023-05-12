@@ -147,39 +147,65 @@ One final thing: if the `row_force_default` property of the gridLayout is set to
 
 To summarize:
 
+Useful facts:
  - Rows are 0-indexed, so row 0 is the first row, row 1 is the second row, etc. No matter the orientation of the GridLayout (`tb-lr`, `bt-lr`, etc), the topmost row is row 0.
  - GridLayouts create slots for each of their child widgets. The slots have the same height for every row. Widgets are placed in the bottom left of each slot. 
  - If the widget has a value for `size_hint_y` that is not `None`, then it will take the full height of the slot. If the `size_hint_y` is `None`, then it is possible for the widget to take less than or more than the height of the slot.
- - If `force_row_default` set to `True`, then the height of the slots for row `n` is set to the value mapped by `n` in `rows_minimum` if `rows_minimum` contains the key `n`. If `rows_minimum` does not contain the key for `n`, then the height of the slots for row `n` is determined by the value of `row_height_default`.
-   - If a child in row `n` has a `size_hint_y` set to `None`, then the value of its `height` determines the height of the widget. If `height` is less than the height of the slot, then the widget will not fill the entire vertical space of the slot. If the `height` exceeds the height of the slot, then the widget will exceed the space of the slot.
-   - If the child has any non-`None` value for `size_hint_y`, then it will fill the entire height of the slot.
+ -  When keeping track of these behaviors, it is extremely useful to remember the following default values for properties of GridLayouts and widgets:
+    - GridLayout:
+      - `force_row_default`: `False`
+      - `rows_minimum`: `{}`
+      - `row_height_default`: 0
+    - Widget:
+      - `size_hint`: `(1, 1)`
+        - And consequently, `size_hint_y`: `1`
+      - `size`: `(100, 100)`
+        - And consequently, `height`: `100`
+
+The process:
+ - If `force_row_default` set to `True`:
+   - The the height of the slots for row `n` is determined by the keys in `rows_minimum`.
+     - if `rows_minimum` contains the key `n`:
+       - Then the height of the slots for row `n` is set to the value mapped by `n` in `rows_minimum`. 
+     - If `rows_minimum` does not contain a key for `n`:
+       - Then the height of the slots for row `n` is the value of `row_height_default`.
+   - The slot height is now determined for every row. The children are then placed in the bottom left of each slot.
+     - If the child has any non-`None` value for `size_hint_y`:
+       - Then the child will fill the entire height of the slot.
+     - If a child in row `n` has a `size_hint_y` set to `None`:
+       - Then the GridLayout allows the user to determine the widget height. And value you assign to the `height` attribute becomes the height of the widget.
+       - If `height` is less than the height of the slot, then the widget will not fill the entire vertical space of the slot.
+       - If the `height` exceeds the height of the slot, then the widget will exceed the space of the slot.
+   
  - If `force_row_default` is set to `False`:
-   - The GridLayout finds the largest of the following three values for the `n`th row and sets that value as the minimum height of that row.
-     - If the key `n` exists in `rows_minimum`, then it uses the value mapped by `n`. If the key `n` is not in `rows_minimum`, then negative infinity.
-     - If at least one child in the `n`th row has a `size_hint_y` set to `None`, then it uses the maximum height of every one of these children. If there are no children with a `size_hint_y` set to `None` in the `n`th row, then negative infinity.
-     - The value of `row_height_default`.
-   - The GridLayout then determines the allotted height for each row. This is calculated by subtracting the following values from the height of the GridLayout:
-     - The padding_top of the GridLayout (`padding[1]`)
-     - The padding_bottom of the GridLayout (`padding[3]`)
-     - The spacing between each row (`spacing[1]` * (number of rows - 1))
-     - The sum of minimum heights for each row
-   - If the allotted height is greater than 0, then the GridLayout provides additional height to the rows through the following process.
-     - If every widget in the `n`th row has a `size_hint_y` with a value of `None`, then no additional height is added to this row.
-     - If at least one widget in row `n` has a non-`None` `size_hint_y`:
-       - The GridLayout calculates the sum of maximum `size_hint_y`'s for each row that contains at least one widget with a non-`None` `size_hint_y`
-       - The GridLayout calculates the ratio of the maximum `size_hint_y` in row `n` to the sum of all maximum `size_hint_y`'s.
-       - The GridLayout multiplies this ratio by the allotted height and adds that to the minimum height of row `n`.
- 
- When keeping track of these behaviors, it is extremely useful to remember the following default values for properties of GridLayouts and widgets:
-  - GridLayout:
-    - `force_row_default`: `False`
-    - `rows_minimum`: `{}`
-    - `row_height_default`: 0
-  - Widget:
-    - `size_hint`: `(1, 1)`
-      - Consequently, `size_hint_y`: `1`
-    - `size`: `(100, 100)`
-      - Consequently, `height`: `100`
+   - The slot height for each row is the sum of the "minimum height" calculated for that row and a fraction of the "allotted height" for that row.
+     - Minimum Height:
+       - The GridLayout finds the largest of the following three values for the `n`th row and sets that value as the minimum height of that row.
+         - If the key `n` exists in `rows_minimum`, then it uses the value mapped by `n`. If the key `n` is not in `rows_minimum`, then negative infinity.
+         - If at least one child in the `n`th row has a `size_hint_y` set to `None`, then it uses the maximum height of every one of these children. If there are no children with a `size_hint_y` set to `None` in the `n`th row, then negative infinity.
+         - The value of `row_height_default`.
+     - Allotted Height:
+       - The GridLayout determines the allotted height for each row by subtracting the following values from the height of the GridLayout:
+         - The padding_top of the GridLayout (`padding[1]`)
+         - The padding_bottom of the GridLayout (`padding[3]`)
+         - The spacing between each row (`spacing[1]` * (number of rows - 1))
+         - The sum of minimum heights for each row
+       - If the allotted height is 0 or less than zero:
+         - The slot height for every child in that row is just the minimum height and nothing more.
+       - If the allotted height is greater than 0:
+         - If every widget in the `n`th row has a `size_hint_y` with a value of `None`:
+           - The slot height for every child in that row is just the minimum height and nothing more.
+         - If at least one widget in row `n` has a non-`None` `size_hint_y`:
+           - The GridLayout determines the maximum `size_hint_y` for every row which contains at least one child with a non-`None` `size_hint_y`.
+           - The GridLayout sums of all maximum `size_hint_y`'s.
+           - The GridLayout calculates the ratio of the maximum `size_hint_y` in row `n` to the sum of all maximum `size_hint_y`'s.
+           - The GridLayout multiplies this ratio by the allotted height and adds that to the minimum height of row `n`.
+    - The slot height is now determined for every row. The children are then placed in the bottom left of each slot.
+      - If the child has a value of `size_hint_y` that is not `None`:
+        - The child will take the full vertical space of the slot.
+      - If a child has a `size_hint_y` whose value is `None`:
+        - Then the GridLayout allows the user to determine the widget height. Any value you assign to the `height` attribute becomes the height of the widget.
+        - Note that the `height` parameter will never exceed the height of the slot. If you review the process for how the slot height is calculated when `force_row_default` is `False`, you will see that the slot height for that row will increase to contain the widget if you try to increase the widget height beyond the slot height.
  
 The behavior of widths and columns follows in the natural way. Just copy-paste what is written above, but replace every "row" with "column", every `row` with `col`, every "height" with "width", every "vertical" with "horizontal", and so on.
 
