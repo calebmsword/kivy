@@ -9,6 +9,8 @@ Chapters:
 # Kivy GridLayout and size_hint
 [Back to title](#kivy-notes)
 
+By convention, Kivy zero-indexes the rows in a grid. So row 0 is the topmost row, row 1 is the second row from the top, and so on. Another important convention is that order in which widgets are added to the grid does not change what is considered row 0. For example, if the `orientation` attribute of the grid is set to `"rl-bt"`, then the grid fills the bottommost row first. But the topmost row is still considered row 0.
+
 A GridLayout creates slots for all of its children and places each child widget in the bottom left corner of its slot. Typically, a widget is sized so it fills the entire area of its slot, but it is possible for a widget to take up less than the full area (we will discuss how later). In a somewhat similar fashion, it is usually not possible to make a widget take more space that what is available in its slot because the GridLayout will increase the size of the row/column containing the widget to ensure the slot and the widget have the same size. We will mention the exception to this rule later.
 
 Every slot in a row will have the same height. Also, every slot in a column will have the same width. Therefore, we will use the height of a row and the height of a slot interchangeably in these notes.
