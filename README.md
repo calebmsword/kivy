@@ -404,7 +404,7 @@ It is safest to always use something like the following code snippet when one wi
 ```python
 from kivy.vector import Vector
 
-def convert_pos(*args, *, input_widget, output_widget):
+def convert_pos(*args, input_widget, output_widget):
     """
     Takes the pos attribute of input_widget and returns a Vector representing
     that position in the parent coordinates of output_widget.
