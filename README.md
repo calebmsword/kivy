@@ -447,7 +447,7 @@ my_project/
 
 Place the code snippet defining `convert_pos` in utils.py. Then in main.py,
 
-```
+```python
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.lang import Builder
