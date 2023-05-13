@@ -388,22 +388,23 @@ It is a code smell if one widget directly accesses the position of another widge
 ```kvlang
 Widget:
     RelativeLayout:
+    	id: rl
         Widget: 
-            id: widget_a
+            id: a
     Widget:
-        id: widget_b
-	# attempt to put widget_b directly right of widget_a
-        pos: widget_a.x + widget_a.width, widget_a.y 
+        id: b
+	# attempt to put b directly right of a
+        pos: a.x + a.width, a.y 
 ```
  
-However, the `pos` attribute (and the `x` and `y` attributes) of `widget_a` and `widget_b` are in different coordinate systems because `widget_a` is in a `RelativeLayout` (one of the “special” widgets) while `widget_b` is not. This may not place `widget_b` in the expected location. 
+However, the `pos` attribute (and the `x` and `y` attributes) of `a` and `b` are in different coordinate systems because `a` is in a `RelativeLayout` (one of the “special” widgets) while `b` is not. This may not place `b` in the expected location. 
 
-It is safest to always use the following code snippet when one widget accesses the position of another widget. 
+It is safest to always use something like the following code snippet when one widget accesses the position of another widget. 
 
 ```python
 from kivy.vector import Vector
 
-def convert_pos(*, input_widget, output_widget):
+def convert_pos(*args, *, input_widget, output_widget):
     """
     Takes the pos attribute of input_widget and returns a Vector representing
     that position in the parent coordinates of output_widget.
@@ -417,4 +418,99 @@ def convert_pos(*, input_widget, output_widget):
 ```
  
 
-For example, `convert_pos(input_widget_of=widget_a, output_widget=widget_b)` returns a Vector describing the position of `widget_a` in the parent coordinates of `widget_b`.
+For example, `pos_in_b = convert_pos(input_widget=a, output_widget=b)` returns a Vector describing the position of `a` in the parent coordinates of `b` and sets the variable `pos_in_b` to a Vector representing this position. `pos_in_b[0]` or `pos_in_b.x` returns the x value of the converted coordinates and `pos_in_b[1]` or `pos_in_b.y` returns the y value of the converted coordinates.
+
+The reason for introducing `*args` in the argument list is to allow the user to create the relavant bindings when using `convert_pos` in kvlang. For example,
+
+```kvlang
+#: import convert_pos utils.convert_pos
+
+Widget:
+    RelativeLayout:
+    	id: rl
+        Widget: 
+            id: a
+    Widget:
+        id: b
+	pos: convert_pos(a.pos, rl.pos, rl.size, input_widget=a, output_widget=b) + (a.width, 0)
+```
+
+The window coordinates of the position of `a` will obviously change if `a.pos` changes, but it may also change if its "special" parent's position or size changes. Hence we create bindings to each of these properties.
+
+For a more concrete example, use the following app. Make sure to create a project structure like the following:
+
+```
+my_project/
+  main.py
+  utils.py
+```
+
+Place the code snippet defining `convert_pos` in utils.py. Then in main.py,
+
+```
+from kivy.app import App
+from kivy.core.window import Window
+from kivy.lang import Builder
+from kivy.modules import inspector
+
+
+root_widget = Builder.load_string(f"""
+#: import convert_pos utils.convert_pos
+
+#: set BLACK 0, 0, 0, 1
+#: set WHITE 0, 0, 0, 1
+#: set GREEN 0, 1, 0, 1
+#: set BLUE 0, 0, 1, 1
+#: set TRANSPARENT 0, 0, 0, 0
+
+Widget:
+    RelativeLayout:
+        id: rl
+        pos: 100, 100
+        ColoredBox:
+            id: a1
+	    pos: 0, 0
+            bg_color: GREEN
+            color: BLACK
+            text: "incorrect"
+        ColoredBox:
+            id: a2
+	    pos: 300, 0
+            bg_color: GREEN
+            color: BLACK
+            text: "correct"
+    ColoredBox:
+        id: b1
+        pos: a1.x + a1.width, a1.y
+        bg_color: BLUE
+        text: "incorrect"
+    ColoredBox:
+        id: b2
+        pos: convert_pos(a2.pos, rl.pos, rl.size, input_widget=a2, output_widget=b2) + (a2.width, 0)
+        bg_color: BLUE
+        text: "correct"
+        
+<ColoredBox@Label>:
+    bg_color: None
+    size_hint: None, None
+    size: 100, 100
+    canvas.before:
+        Color:
+            rgba: TRANSPARENT if self.bg_color is None else self.bg_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+""")
+
+
+class TestApp(App):
+
+    def build(self):
+        inspector.create_inspector(Window, root_widget)
+        return root_widget
+
+
+if __name__ == '__main__':
+    TestApp().run()
+
+```
