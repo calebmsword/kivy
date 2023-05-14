@@ -383,8 +383,8 @@ For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position
 
 `parent.to_widget(x, y)`
  - `x`, `y` are assumed to be in window coordinates. It returns a tuple that converts this position into the parent coordinates of the widget which calls the method.
-   - For example, `widget_a.pos = widget_a.parent.to_widget(Window.width/2, Window.height/2)` places `widget_a` in the center of the application.
-   - This hack works because, as mentioned in [the previous chapter](#consequences-of-the-definitions), the widget/local coordinates of the parent have the same origin as the parent coordinates of the child.
+   - For example, `widget_a.pos = widget_a.parent.to_widget(Window.width/2, Window.height/2)` places the bottom-left corner of `widget_a` in the center of the application.
+   - This hack works because, as mentioned in [the previous chapter](#consequences-of-the-definitions), the widget/local coordinates of a parent has the same origin as the parent coordinates of its child.
 
 
 ### Converting coordinates between widgets
