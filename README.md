@@ -404,20 +404,24 @@ It is safest to always use something like the following code snippet when one wi
 ```python
 from kivy.vector import Vector
 
-def convert_pos(*args, input, output):
+def convert_pos(*args, input, output):  # noqa
     """
     Takes the pos attribute of input and returns a Vector representing
     that position in the parent coordinates of output.
+    
+    The function allows variable positional params. These do not affect 
+    the behavior of this function, but they do allow one to easily 
+    create bindings in kvlang.
     """
     window_coords = input.to_window(*input.pos)
-
-    # The widget/local coordinates of the parent of output are the
-    #   same as the parent coordinates of output
-    # Also, kivy Vectors are a subclass of Python lists.
-    return Vector(output.parent.to_widget(*window_coords))
+	
+    # widget/local coords of output's parent == output's parent coords
+    output_parent_coords = output.parent.to_widget(*window_coords)
+    
+    # kivy Vectors are a subclass of Python lists.
+    return Vector(output_parent_coords)
 ```
  
-
 For example, `pos_in_b = convert_pos(input=a, output=b)` returns a Vector describing the position of `a` in the parent coordinates of `b` and sets the variable `pos_in_b` to a Vector representing this position. `pos_in_b[0]` or `pos_in_b.x` returns the x value of the converted coordinates and `pos_in_b[1]` or `pos_in_b.y` returns the y value of the converted coordinates.
 
 The reason for introducing `*args` in the argument list is to allow the user to create the relavant bindings when using `convert_pos` in kvlang. For example,
@@ -433,11 +437,18 @@ Widget:
     Widget:
         id: b
 	pos: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b) + (a.width, 0)
+	
+	# if convert_pos were an ordinary list, not a kivy Vector, we would have to do
+	# pos: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b)[0] + a.width, convert_pos(a.pos, rl.pos, rl.size, input=a, output=b)[1]
+	
+	# or equivalently,
+	# x: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b)[0] + a.width
+	# y: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b)[1]
 ```
 
 The window coordinates of the position of `a` will obviously change if `a.pos` changes, but it may also change if its "special" parent's position or size changes. Hence we create bindings to each of these properties.
 
-For a more concrete example, use the following app. Make sure to create a project structure like the following:
+We have chosen terse names for the ids of the widgets so that the lines don't stretch too long. However, it is good practice to use more declarative ids for your widgets. In such a case, it may be preferable to handle the binding logic directly in Python instead of kvlang. See the following example for a demonstration. First, create a project structure like the following:
 
 ```
 my_project/
@@ -452,13 +463,45 @@ from kivy.app import App
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.modules import inspector
+from kivy.properties import ColorProperty
+from kivy.properties import ObjectProperty
+from kivy.uix.label import Label
+from kivy.vector import Vector
+
+from utils import convert_pos
+
+
+class ColoredBox(Label):
+    bg_color = ColorProperty(None)
+
+
+class ColoredBoxBindingsInPython(ColoredBox):
+    widget_to_left = ObjectProperty(None)
+    special_parent = ObjectProperty(None)
+
+    def _update_pos(self, *_args):
+        widget_to_left = self.widget_to_left
+        if widget_to_left is not None:
+            left_pos = convert_pos(input=widget_to_left, output=self)
+            displacement = Vector(widget_to_left.width, 0)
+            self.pos = left_pos + displacement
+
+    def on_widget_to_left(self, _instance, widget_to_left):
+        if widget_to_left is not None:
+            widget_to_left.bind(size=self._update_pos)
+            widget_to_left.bind(pos=self._update_pos)
+
+    def on_special_parent(self, _instance, special_parent):
+        if special_parent is not None:
+            special_parent.bind(pos=self._update_pos)
+            special_parent.bind(size=self._update_pos)
 
 
 root_widget = Builder.load_string(f"""
 #: import convert_pos utils.convert_pos
 
 #: set BLACK 0, 0, 0, 1
-#: set WHITE 0, 0, 0, 1
+#: set WHITE 1, 1, 1, 1
 #: set GREEN 0, 1, 0, 1
 #: set BLUE 0, 0, 1, 1
 #: set TRANSPARENT 0, 0, 0, 0
@@ -469,13 +512,18 @@ Widget:
         pos: 100, 100
         ColoredBox:
             id: a1
-	    pos: 0, 0
             bg_color: GREEN
             color: BLACK
             text: "incorrect"
         ColoredBox:
             id: a2
-	    pos: 300, 0
+            pos: 200, 0
+            bg_color: GREEN
+            color: BLACK
+            text: "correct"
+        ColoredBox:
+            id: green_box
+            pos: 500, 0
             bg_color: GREEN
             color: BLACK
             text: "correct"
@@ -489,9 +537,14 @@ Widget:
         pos: convert_pos(a2.pos, rl.pos, rl.size, input=a2, output=b2) + (a2.width, 0)
         bg_color: BLUE
         text: "correct"
-        
-<ColoredBox@Label>:
-    bg_color: None
+    ColoredBoxBindingsInPython:
+        widget_to_left: green_box
+        special_parent: rl
+        bg_color: BLUE
+        text: "correct"
+    
+
+<ColoredBox>:
     size_hint: None, None
     size: 100, 100
     canvas.before:
