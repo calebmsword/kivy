@@ -471,7 +471,6 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.scatter import Scatter
 from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.scrollview import ScrollView
-from kivy.vector import Vector
 
 from utils import convert_pos
 
