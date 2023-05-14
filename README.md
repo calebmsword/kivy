@@ -488,8 +488,7 @@ class ColoredBoxBindingsInPython(ColoredBox):
         widget_to_left = self.widget_to_left
         if widget_to_left is not None:
             left_pos = convert_pos(input=widget_to_left, output=self)
-            displacement = Vector(widget_to_left.width, 0)
-            self.pos = left_pos + displacement
+            self.pos = left_pos + (widget_to_left.width, 0)
 
     def on_widget_to_left(self, _instance, widget_to_left):
 
