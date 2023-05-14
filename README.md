@@ -404,21 +404,21 @@ It is safest to always use something like the following code snippet when one wi
 ```python
 from kivy.vector import Vector
 
-def convert_pos(*args, input_widget, output_widget):
+def convert_pos(*args, input, output):
     """
-    Takes the pos attribute of input_widget and returns a Vector representing
-    that position in the parent coordinates of output_widget.
+    Takes the pos attribute of input and returns a Vector representing
+    that position in the parent coordinates of output.
     """
-    window_coords = input_widget.to_window(*input_widget.pos)
+    window_coords = input_widget.to_window(*input.pos)
 
-    # The widget/local coordinates of the parent of output_widget are the
-    #   same as the parent coordinates of output_widget
+    # The widget/local coordinates of the parent of output are the
+    #   same as the parent coordinates of output
     # Also, kivy Vectors are a subclass of Python lists.
-    return Vector(output_widget.parent.to_widget(*window_coords))
+    return Vector(output.parent.to_widget(*window_coords))
 ```
  
 
-For example, `pos_in_b = convert_pos(input_widget=a, output_widget=b)` returns a Vector describing the position of `a` in the parent coordinates of `b` and sets the variable `pos_in_b` to a Vector representing this position. `pos_in_b[0]` or `pos_in_b.x` returns the x value of the converted coordinates and `pos_in_b[1]` or `pos_in_b.y` returns the y value of the converted coordinates.
+For example, `pos_in_b = convert_pos(input=a, output=b)` returns a Vector describing the position of `a` in the parent coordinates of `b` and sets the variable `pos_in_b` to a Vector representing this position. `pos_in_b[0]` or `pos_in_b.x` returns the x value of the converted coordinates and `pos_in_b[1]` or `pos_in_b.y` returns the y value of the converted coordinates.
 
 The reason for introducing `*args` in the argument list is to allow the user to create the relavant bindings when using `convert_pos` in kvlang. For example,
 
@@ -432,7 +432,7 @@ Widget:
             id: a
     Widget:
         id: b
-	pos: convert_pos(a.pos, rl.pos, rl.size, input_widget=a, output_widget=b) + (a.width, 0)
+	pos: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b) + (a.width, 0)
 ```
 
 The window coordinates of the position of `a` will obviously change if `a.pos` changes, but it may also change if its "special" parent's position or size changes. Hence we create bindings to each of these properties.
@@ -486,7 +486,7 @@ Widget:
         text: "incorrect"
     ColoredBox:
         id: b2
-        pos: convert_pos(a2.pos, rl.pos, rl.size, input_widget=a2, output_widget=b2) + (a2.width, 0)
+        pos: convert_pos(a2.pos, rl.pos, rl.size, input=a2, output=b2) + (a2.width, 0)
         bg_color: BLUE
         text: "correct"
         
