@@ -467,6 +467,10 @@ from kivy.modules import inspector
 from kivy.properties import ColorProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.label import Label
+from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.scatter import Scatter
+from kivy.uix.scatterlayout import ScatterLayout
+from kivy.uix.scrollview import ScrollView
 from kivy.vector import Vector
 
 from utils import convert_pos
@@ -480,7 +484,7 @@ class ColoredBoxBindingsInPython(ColoredBox):
     widget_to_left = ObjectProperty(None)
     special_parent = ObjectProperty(None)
 
-    def _update_pos(self, *_args):
+    def _update_pos(self, *args):
         widget_to_left = self.widget_to_left
         if widget_to_left is not None:
             left_pos = convert_pos(input=widget_to_left, output=self)
@@ -488,14 +492,35 @@ class ColoredBoxBindingsInPython(ColoredBox):
             self.pos = left_pos + displacement
 
     def on_widget_to_left(self, _instance, widget_to_left):
+
+        def find_special_parent(event_dispatcher, *args):
+            if event_dispatcher is Window:
+                self.special_parent = Window
+                return
+
+            is_special = (
+                    isinstance(event_dispatcher, RelativeLayout) or
+                    isinstance(event_dispatcher, ScrollView) or
+                    isinstance(event_dispatcher, Scatter) or
+                    isinstance(event_dispatcher, ScatterLayout)
+            )
+
+            if is_special:
+                self.special_parent = event_dispatcher
+            else:
+                find_special_parent(event_dispatcher.parent)
+
+        find_special_parent(widget_to_left)
+
         if widget_to_left is not None:
             widget_to_left.bind(size=self._update_pos)
             widget_to_left.bind(pos=self._update_pos)
 
     def on_special_parent(self, _instance, special_parent):
         if special_parent is not None:
-            special_parent.bind(pos=self._update_pos)
             special_parent.bind(size=self._update_pos)
+            if special_parent is not Window:
+                special_parent.bind(pos=self._update_pos)
 
 
 root_widget = Builder.load_string(f"""
@@ -540,7 +565,6 @@ Widget:
         text: "correct"
     ColoredBoxBindingsInPython:
         widget_to_left: green_box
-        special_parent: rl
         bg_color: BLUE
         text: "correct"
     
