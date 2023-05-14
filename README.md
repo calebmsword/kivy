@@ -409,7 +409,7 @@ def convert_pos(*args, input, output):
     Takes the pos attribute of input and returns a Vector representing
     that position in the parent coordinates of output.
     """
-    window_coords = input_widget.to_window(*input.pos)
+    window_coords = input.to_window(*input.pos)
 
     # The widget/local coordinates of the parent of output are the
     #   same as the parent coordinates of output
