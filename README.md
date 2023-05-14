@@ -329,6 +329,7 @@ Every widget has an API for converting positions to different coordinate systems
     
     WINDOW -- "to_widget(x, y, relative=True)" --> RELATIVE
     WINDOW -- "to_widget(x, y)" --> WIDGET
+    WINDOW -- "parent.to_widget(x, y)" --> PARENT
     RELATIVE -- "to_window(x, y, initial=False, relative=True)" --> WINDOW
     RELATIVE -- "to_parent(x, y, relative=True)" --> PARENT
     WIDGET -- "to_window(x, y, initial=False)" --> WINDOW
@@ -363,9 +364,9 @@ For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position
  - If `relative` is set to `False` (the default value):
    - `x`, `y` are assumed to be in window coordinates. It returns a tuple that is this position in the widget/local coordinates of the widget which calls the method. 
  - If `relative` is set to `True`:
-   - `x`, `y` are assumed to be in window coordinates. It returns a tuple that is this position in the relative coordinates of the widget which calls the method. 
+   - `x`, `y` are assumed to be in window coordinates. It returns a tuple that is this position in the relative coordinates of the widget which calls the method.
 
- 
+
 `to_window(x, y, initial=True, relative=False)`
  - If `initial` is set to `True` (the default value): 
    - `x`, `y` are assumed to be in parent coordinates of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
@@ -378,6 +379,13 @@ For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position
    - If we inspect Kivy’s source code, `widget_a.to_window(x, y, initial=True, relative=True)` is equivalent to calling `widget_a.parent.to_window(x, y, relative=True)`. 
    - That is, `x`, `y` are assumed to be in the relative coordinates of the direct parent of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
    - Never do this. If you ever need this very specific conversion, just use `widget_a.parent.to_window(x, y, relative=True)`, which is more declarative. 
+
+
+`parent.to_widget(x, y)`
+ - `x`, `y` are assumed to be in window coordinates. It returns a tuple that converts this position into the parent coordinates of the widget which calls the method.
+   - For example, `widget_a.pos = widget_a.parent.to_widget(Window.width/2, Window.height/2)` places `widget_a` in the center of the application.
+   - This hack works because, as mentioned in [the previous chapter](#consquences-of-the-definitions), the widget/local coordinates of the parent have the same origin as the parent coordinates of the child.
+
 
 ### Converting coordinates between widgets
 [Back to chapter start](#kivy-coordinates)
