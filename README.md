@@ -457,7 +457,7 @@ Widget:
 
 The window coordinates of the position of `a` will obviously change if `a.pos` changes, but it may also change if its "special" parent's position or size changes. Hence we create bindings to each of these properties.
 
-We have chosen terse names for the ids of the widgets so that the lines don't stretch too long. However, it is good practice to use more declarative ids for your widgets. In such a case, it may be preferable to handle the binding logic directly in Python instead of kvlang. See the following example for a demonstration. First, create a project structure like the following:
+In the previous examples, we converted the position of one widget to the coordinates of another purely in kvlang. In order to have the relevant bindings for this calculation, we needed an id for the special widget containing the widget that is to be converted. However, we might not in general have access to this widget. If that is the case, we will need to handle the logic for placing the adjacent performed purely in python. See the following example for a demonstration. First, create a project structure like the following:
 
 ```
 my_project/
