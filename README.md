@@ -2,7 +2,7 @@
 This README contains documentation about some odds and ends of Kivy but the official documentation does not describe in a satisfactory manner.
 
 Chapters:
-- [GridLayouts and size_hint](#kivy-gridlayouts-in-too-much-detail)
+- [GridLayouts in too much Detail](#kivy-gridlayouts-in-too-much-detail)
 - [Kivy Coordinates](#kivy-coordinates)
 
 
