@@ -2,12 +2,22 @@
 This README contains documentation about some odds and ends of Kivy but the official documentation does not describe in a satisfactory manner.
 
 Chapters:
-- [GridLayouts and size_hint](#kivy-gridlayout-and-size_hint)
+- [GridLayouts and size_hint](#kivy-gridlayouts-in-too-much-detail)
 - [Kivy Coordinates](#kivy-coordinates)
 
 
-# Kivy GridLayout and size_hint
+# Kivy GridLayouts in too much detail
 [Back to title](#kivy-notes)
+
+Subsections:
+ - [Discussion](#kivy-gridlayouts-discussion)
+ 
+ - [Summary](#kivy-gridlayouts-summary)
+
+### Kivy GridLayouts discussion
+[Back to title](#kivy-notes)
+
+[Back to chapter start](#kivy-gridlayouts-in-too-much-detail)
 
 By convention, Kivy zero-indexes the rows in a grid. So row 0 is the topmost row, row 1 is the second row from the top, and so on. Another important convention is that order in which widgets are added to the grid does not change what is considered row 0. For example, if the `orientation` attribute of the grid is set to `"rl-bt"`, then the grid fills the bottommost row first. But the topmost row is still considered row 0.
 
@@ -145,9 +155,14 @@ If a widget has a non-`None` `size_hint_y`, then the GridLayout will ignore any 
 
 <img src="https://github.com/calebmsword/kivy/assets/85499281/cbfa4692-b91f-46ca-9f9d-f30de60e15a7" height=600 />
 
-One final thing: if the `row_force_default` property of the gridLayout is set to `True`, the height of the `n`th slot is set to the value mapped by `n` in `rows_minimum`, unless `rows_minimum` does not contain `n` as a key, in which case the slot is set to `row_default_height`. However, this means that if you set the `size_hint` to (`None`, `None`) and then assign a size to the widget, you can make the widget have any `width` and `height` that you want. This is the only way to exceed the size of the slot for the widget.
+The previous discussion is only applicable if the `row_force_default` attribute of the GridLayout is set to `False`. If the `row_force_default` property of the GridLayout is set to `True`, the height of the `n`th slot is set to the value mapped by `n` in `rows_minimum`, unless `rows_minimum` does not contain `n` as a key, in which case the slot is set to `row_default_height`. However, this means that if you set the `size_hint` to (`None`, `None`) and then assign a size to the widget, you can make the widget have any `width` and `height` that you want. This is the only way to exceed the size of the slot for the widget.
 
-To summarize:
+One more thing: what if both the `cols` and `rows` attribute of the GridLayout are `None`? In that case, the GridLayout does not manage the layout of its children at all. You can freely arrange and size any of its children and the `size_hint` attribute has no effect.
+
+### Kivy GridLayouts summary
+[Back to title](#kivy-notes)
+
+[Back to chapter start](#kivy-gridlayouts-in-too-much-detail)
 
 Useful facts:
  - Rows are 0-indexed, so row 0 is the first row, row 1 is the second row, etc. No matter the orientation of the GridLayout (`tb-lr`, `bt-lr`, etc), the topmost row is row 0.
@@ -166,6 +181,8 @@ Useful facts:
         - And consequently, `height`: `100`
 
 The process:
+ - If `cols` is `None` and `rows` is `None`:
+   - The GridLayout does not manage the positions and sizes of its children. The `size_hint` attribute of any child of the GridLayout has no effect. 
  - If `force_row_default` set to `True`:
    - The the height of the slots for row `n` is determined by the keys in `rows_minimum`.
      - if `rows_minimum` contains the key `n`:
