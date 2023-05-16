@@ -430,14 +430,13 @@ It is safest to always use something like the following code snippet when one wi
 ```python
 from kivy.vector import Vector
 
-def convert_pos(*args, input, output):  # noqa
+def convert_pos(*, input, output, bind):  # noqa
     """
     Takes the pos attribute of input and returns a Vector representing
     that position in the parent coordinates of output.
     
-    The function allows variable positional params. These do not affect 
-    the behavior of this function, but they do allow one to easily 
-    create bindings in kvlang.
+    The bind keyword does not affect the behavior of this function but 
+    instead allows one to easily create bindings in kvlang.
     """
     window_coords = input.to_window(*input.pos)
 	
@@ -450,7 +449,7 @@ def convert_pos(*args, input, output):  # noqa
  
 For example, `pos_in_b = convert_pos(input=a, output=b)` returns a Vector describing the position of `a` in the parent coordinates of `b` and sets the variable `pos_in_b` to a Vector representing this position. `pos_in_b[0]` or `pos_in_b.x` returns the x value of the converted coordinates and `pos_in_b[1]` or `pos_in_b.y` returns the y value of the converted coordinates.
 
-The reason for introducing `*args` in the argument list is to allow the user to create the relavant bindings when using `convert_pos` in kvlang. For example,
+The reason for introducing the `bind` keyword in the argument list is to allow the user to create the relavant bindings when using `convert_pos` in kvlang. For example,
 
 ```kvlang
 #: import convert_pos utils.convert_pos
@@ -462,14 +461,14 @@ Widget:
             id: a
     Widget:
         id: b
-	pos: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b) + (a.width, 0)
+	pos: convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size]) + (a.width, 0)
 	
 	# if convert_pos were an ordinary list, not a kivy Vector, we would have to do
-	# pos: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b)[0] + a.width, convert_pos(a.pos, rl.pos, rl.size, input=a, output=b)[1]
+	# pos: convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size])[0] + a.width, convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size])[1]
 	
 	# or equivalently,
-	# x: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b)[0] + a.width
-	# y: convert_pos(a.pos, rl.pos, rl.size, input=a, output=b)[1]
+	# x: convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size])[0] + a.width
+	# y: convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size])[1]
 ```
 
 The window coordinates of the position of `a` will obviously change if `a.pos` changes, but it may also change if its "special" parent's position or size changes. Hence we create bindings to each of these properties.
@@ -583,7 +582,7 @@ Widget:
         text: "incorrect"
     ColoredBox:
         id: b2
-        pos: convert_pos(a2.pos, rl.pos, rl.size, input=a2, output=b2) + (a2.width, 0)
+        pos: convert_pos(input=a2, output=b2, bind=[a2.pos, rl.pos, rl.size]) + (a2.width, 0)
         bg_color: BLUE
         text: "correct"
     ColoredBoxBindingsInPython:
