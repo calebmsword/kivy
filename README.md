@@ -512,27 +512,25 @@ class ColoredBoxBindingsInPython(ColoredBox):
         if widget_to_left is not None:
             left_pos = convert_pos(input=widget_to_left, output=self)
             self.pos = left_pos + (widget_to_left.width, 0)
-
+    
+    def _find_special_parent(event_dispatcher, *args):
+        if event_dispatcher is Window:
+	    self.special_parent = Window
+	    return
+    
+        is_special = (
+	    isinstance(event_dispatcher, RelativeLayout) or
+	    isinstance(event_dispatcher, ScrollView) or
+	    isinstance(event_dispatcher, Scatter) or
+	    isinstance(event_dispatcher, ScatterLayout))
+        
+        if is_special:
+	    self.special_parent = event_dispatcher
+        else:
+	    find_special_parent(event_dispatcher.parent)
+    
     def on_widget_to_left(self, _instance, widget_to_left):
-
-        def find_special_parent(event_dispatcher, *args):
-            if event_dispatcher is Window:
-                self.special_parent = Window
-                return
-
-            is_special = (
-                    isinstance(event_dispatcher, RelativeLayout) or
-                    isinstance(event_dispatcher, ScrollView) or
-                    isinstance(event_dispatcher, Scatter) or
-                    isinstance(event_dispatcher, ScatterLayout)
-            )
-
-            if is_special:
-                self.special_parent = event_dispatcher
-            else:
-                find_special_parent(event_dispatcher.parent)
-
-        find_special_parent(widget_to_left)
+        self._find_special_parent(widget_to_left)
 
         if widget_to_left is not None:
             widget_to_left.bind(size=self._update_pos)
