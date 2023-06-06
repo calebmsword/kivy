@@ -393,9 +393,9 @@ For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position
    - If `relative` is set to `True`: 
      - `x`, `y` are assumed to be in the relative coordinates of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
  - What are we to make of the case where `initial` is `True` and `relative` is `True`? 
-   - If we inspect Kivy’s source code, `widget_a.to_window(x, y, initial=True, relative=True)` is equivalent to calling `widget_a.parent.to_window(x, y, relative=True)`. 
+   - If we inspect Kivy’s source code, `widget_a.to_window(x, y, initial=True, relative=True)` is equivalent to calling `widget_a.parent.to_window(x, y, initial=False, relative=True)`. 
    - That is, `x`, `y` are assumed to be in the relative coordinates of the direct parent of the widget which calls the method. It returns a tuple that is this position in window coordinates. 
-   - Never do this. If you ever need this very specific conversion, just use `widget_a.parent.to_window(x, y, relative=True)`, which is more declarative. 
+   - Never do this. If you ever need this very specific conversion, just use `widget_a.parent.to_window(x, y, initial=False, relative=True)`, which is more declarative.
 
 
 `parent.to_widget(x, y)`
