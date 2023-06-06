@@ -504,6 +504,7 @@ class ColoredBox(Label):
 
 
 class ColoredBoxBindingsInPython(ColoredBox):
+    """This widget sets it pos property so that is placed directly to the right of self.widget_to_left."""
     widget_to_left = ObjectProperty(None)
     special_parent = ObjectProperty(None)
 
@@ -514,6 +515,7 @@ class ColoredBoxBindingsInPython(ColoredBox):
             self.pos = left_pos + (widget_to_left.width, 0)
     
     def _find_special_parent(event_dispatcher, *args):
+    	"""Recursively crawls up the widget tree to find the first special parent of the given event dispatcher."""
         if event_dispatcher is Window:
 	    self.special_parent = Window
 	    return
@@ -530,6 +532,7 @@ class ColoredBoxBindingsInPython(ColoredBox):
 	    find_special_parent(event_dispatcher.parent)
     
     def on_widget_to_left(self, _instance, widget_to_left):
+        """Creates the appropriate bindings to widget_to_left. Also finds the special parent of widget_to_left."""
         self._find_special_parent(widget_to_left)
 
         if widget_to_left is not None:
@@ -537,6 +540,7 @@ class ColoredBoxBindingsInPython(ColoredBox):
             widget_to_left.bind(pos=self._update_pos)
 
     def on_special_parent(self, _instance, special_parent):
+    	"""Creates the appropriate bindings to the special parent of widget_to_left."""
         if special_parent is not None:
             special_parent.bind(size=self._update_pos)
             if special_parent is not Window:
