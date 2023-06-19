@@ -433,9 +433,10 @@ def convert_pos(*, input, output, bind):  # noqa
     The bind keyword does not affect the behavior of this function but 
     instead allows one to easily create bindings in kvlang.
     """
+    # convert input position from input's parent coordinates to window coordinates
     window_coords = input.to_window(*input.pos)
 	
-    # widget/local coords of output's parent == output's parent coords
+    # convert window coordinates to output's parent coordinates 
     output_parent_coords = output.parent.to_widget(*window_coords)
     
     # kivy Vectors are a subclass of Python lists.
