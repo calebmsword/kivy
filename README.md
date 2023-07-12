@@ -263,12 +263,48 @@ Widget:
  
 However, the `pos` attribute (and the `x` and `y` attributes) of `a` and `b` are in different coordinate systems because `a` is in a `RelativeLayout` (one of the “special” widgets) while `b` is not. This may not place `b` in the expected location. 
 
+You might then ask how one widget may safely access the position of the widget. But before doing this in an actual application, please consult the following checklist.
+
+- Do you really need to access the position of another widget directly? With a proper widget tree, this is rarely ever necessary.
+- Double check that you really must access the widget's position directly.
+- Triple-check that you really must access the widget's position directly.
+
+If you are confident that you must do this, then read on. However, there are lots of subtleties required to do this robustly.
+
+You'd *think* that the answer is simple. Just convert the other widget's coordinates into window coordinates, and then convert those window coordinates into the parent coordinates of the current widget. For example,
+
+```python
+widget_a = Widget()
+widget_b = Widget()
+
+a_pos_in_window_coords = widget_a.to_window(*widget_a.pos)
+a_pos_in_parent_coords_of_b = widget_b.parent.to_widget(*window_coords)
+
+widget_b.pos = b_parent_coords  # naive!
+```
+
+However, if `widget_a` changes its position, then `widget_b` should also move. So we might then try
+
+```python
+widget_a = Widget()
+widget_b = Widget()
+
+def update_b_pos(*args):
+    a_pos_in_window_coords = widget_a.to_window(*widget_a.pos)
+    a_pos_in_parent_coords_of_b = widget_b.parent.to_widget(*window_coords)
+    widget_b.pos = b_parent_coords 
+
+widget_a.bind(pos=update_b_pos)  # naive!
+```
+
+However, it is possible for `widget_a` to change its position in window coordinates without changing its `pos` attribute. For example, if `widget_a` is a child of a `RelativeLayout`, the RelativeLayout 
+
 It is safest to always use something like the following code snippet when one widget accesses the position of another widget. 
 
 ```python
 from kivy.vector import Vector
 
-def convert_pos(*, input, output, bind):  # noqa
+def convert_pos(*, input, output, bind):
     """
     Takes the pos attribute of input and returns a Vector representing
     that position in the parent coordinates of output.
