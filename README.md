@@ -533,7 +533,7 @@ Widget:
         text: "incorrect"
     ColoredBox:
         id: b2
-        pos: convert_pos(input=a2, output=b2, bind=[a2.pos, rl.pos, rl.size]) + (a2.width, 0)
+        pos: convert_pos(input=a2, output=b2, bind=[a2.pos, a2.size, rl.pos, rl.size]) + (a2.width, 0)
         bg_color: BLUE
         text: "correct"
     ColoredBoxBindingsInPython:
