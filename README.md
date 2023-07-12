@@ -294,12 +294,89 @@ def update_b_pos(*args):
     a_pos_in_parent_coords_of_b = widget_b.parent.to_widget(*window_coords)
     widget_b.pos = b_parent_coords 
 
-widget_a.bind(pos=update_b_pos)  # naive!
+widget_a.bind(pos=update_b_pos, size=update_b_pos)  # naive!
 ```
 
-However, it is possible for `widget_a` to change its position in window coordinates without changing its `pos` attribute. For example, if `widget_a` is a child of a `RelativeLayout`, the RelativeLayout 
+However, it is possible for `widget_a` to change its position in window coordinates without changing its `pos` or `size` attributes. For example, if `widget_a` is a child of a `RelativeLayout` then it will change its position in window coordinates whenever the position of the `RelativeLayout` changes. This can even happen if the size of the RelativeLayout changes (for example, suppose the RelativeLayout is anchored to the right of some boundary and then `widget_a`'s `pos` attribute is `0, 0`). 
 
-It is safest to always use something like the following code snippet when one widget accesses the position of another widget. 
+So the correct strategy for placing `widget_b` directly on top of `widget_a` is as follows:
+ - initialize our two widgets `widget_a` and `widget_b`
+ - place them in the widget tree
+ - find the "special" parent of `widget_a`, if it has one
+ - create a method which converts `widget_a`'s position into the parent coordinates of `widget_b` and then assigns `widget_b.pos` to that value
+ - bind this method to changes in `widget_a`'s pos, size, as well as to changes to the pos and size of the special parent of `widget_a`
+
+For example,
+
+```python
+from kivy.core.window import Window
+
+widget_a = Widget()
+widget_b = Widget()
+
+# do stuff and place widget_a and widget_b in the widget tree
+
+# find widget_a's special parent
+def find_special_parent_of(event_dispatcher, initial=True):
+    # start crawling widget tree at starting widget's parent
+    if initial:
+        find_special_parent_of(event_dispatcher.parent, initial=False)
+    
+    # base case
+    if event_dispatcher:
+        return event_dispatcher
+
+    if (
+    isinstance(event_dispatcher, RelativeLayout) or
+    isinstance(event_dispatcher, ScrollView) or
+    isinstance(event_dispatcher, Scatter) or
+    isinstance(event_dispatcher, ScatterLayout)):
+        return event_dispatcher
+
+    find_special_parent_of(event_dispatcher.parent, initial=False)
+
+special_parent = find_special_parent_of(widget_a)
+
+def update_b_pos(*args):
+    a_pos_in_window_coords = widget_a.to_window(*widget_a.pos)
+    a_pos_in_parent_coords_of_b = widget_b.parent.to_widget(*window_coords)
+    widget_b.pos = b_parent_coords
+
+widget_a.bind(pos=update_b_pos, size=update_b_pos)
+special_parent.bind(size=update_b_pos)
+
+if special_parent is not Window:
+    special_parent.bind(pos=update_b_pos)
+```
+
+A more practical example will be shown later.
+
+What if we want to assign positions directly in kvlang? To start, it will be helpful to create the following utility function:
+
+```python
+def convert_pos(*, input, output):
+    window_coords = input.to_window(*input.pos)
+    output_parent_coords = output.parent.to_widget(*window_coords)
+    
+    return output_parent_coords
+```
+
+For example, `pos_in_b = convert_pos(input=a, output=b)` returns a list such that `pos_in_b[0]` returns the x value of the converted coordinates and `pos_in_b.[1]` returns the y value of the converted coordinates. However, we can make this a little more declarative with the following simple change:
+
+```python
+from kivy.vector import Vector
+
+def convert_pos(*, input, output):
+    window_coords = input.to_window(*input.pos)
+    output_parent_coords = output.parent.to_widget(*window_coords)
+    
+    # kivy Vectors are a subclass of Python lists.
+    return Vector(output_parent_coords)
+```
+
+With this change, then `pos_in_b = convert_pos(input=a, output=b)` returns a Vector describing the position of `a` in the parent coordinates of `b` and sets the variable `pos_in_b` to a Vector representing this position. `pos_in_b[0]` or `pos_in_b.x` returns the x value of the converted coordinates and `pos_in_b[1]` or `pos_in_b.y` returns the y value of the converted coordinates.
+
+We will also make one more alteration to this method. The reason for this will be clear in a moment.
 
 ```python
 from kivy.vector import Vector
@@ -310,21 +387,15 @@ def convert_pos(*, input, output, bind):
     that position in the parent coordinates of output.
     
     The bind keyword does not affect the behavior of this function but 
-    instead allows one to easily create bindings in kvlang.
+    instead allows one to declaratively create bindings in kvlang.
     """
-    # convert input position from input's parent coordinates to window coordinates
     window_coords = input.to_window(*input.pos)
-	
-    # convert window coordinates to output's parent coordinates 
     output_parent_coords = output.parent.to_widget(*window_coords)
     
-    # kivy Vectors are a subclass of Python lists.
     return Vector(output_parent_coords)
 ```
- 
-For example, `pos_in_b = convert_pos(input=a, output=b)` returns a Vector describing the position of `a` in the parent coordinates of `b` and sets the variable `pos_in_b` to a Vector representing this position. `pos_in_b[0]` or `pos_in_b.x` returns the x value of the converted coordinates and `pos_in_b[1]` or `pos_in_b.y` returns the y value of the converted coordinates.
 
-The reason for introducing the `bind` keyword in the argument list is to allow the user to create the relavant bindings when using `convert_pos` in kvlang. For example,
+The reason for introducing the `bind` keyword in the argument list is to allow the user to create the relavant bindings when using `convert_pos` in kvlang. For example, the following code places one widget directly to the right of another.
 
 ```kvlang
 #: import convert_pos utils.convert_pos
@@ -336,19 +407,19 @@ Widget:
             id: a
     Widget:
         id: b
-	pos: convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size]) + (a.width, 0)
+	pos: convert_pos(input=a, output=b, bind=[a.pos, a.size, rl.pos, rl.size]) + (a.width, 0)
 	
 	# if convert_pos were an ordinary list, not a kivy Vector, we would have to do
-	# pos: convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size])[0] + a.width, convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size])[1]
+	# pos: convert_pos(input=a, output=b, bind=[a.pos, a.size, rl.pos, rl.size])[0] + a.width, convert_pos(input=a, output=b, bind=[a.pos, a.size, rl.pos, rl.size])[1]
 	
 	# or equivalently,
-	# x: convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size])[0] + a.width
-	# y: convert_pos(input=a, output=b, bind=[a.pos, rl.pos, rl.size])[1]
+	# x: convert_pos(input=a, output=b, bind=[a.pos, a.size, rl.pos, rl.size])[0] + a.width
+	# y: convert_pos(input=a, output=b, bind=[a.pos, a.size, rl.pos, rl.size])[1]
 ```
 
-The window coordinates of the position of `a` will obviously change if `a.pos` changes, but it may also change if its "special" parent's position or size changes. Hence we create bindings to each of these properties.
+Of course, instead of introduction a bind keyword, we could create the signature `convert_pos(*args, input, output)` and just pass whatever positional parameters are necessary. But the former method is more declarative.
 
-In the previous examples, we converted the position of one widget to the coordinates of another purely in kvlang. In order to have the relevant bindings for this calculation, we needed an id for the special widget containing the widget that is to be converted. However, we might not in general have access to this widget. If that is the case, we will need to handle the logic for placing the adjacent performed purely in python. See the following example for a demonstration. First, create a project structure like the following:
+All of this was pretty involved and deserves a replicable example. To do so, create the project structure
 
 ```
 my_project/
@@ -389,10 +460,13 @@ class ColoredBoxBindingsInPython(ColoredBox):
             left_pos = convert_pos(input=widget_to_left, output=self)
             self.pos = left_pos + (widget_to_left.width, 0)
     
-    def _find_special_parent(event_dispatcher, *args):
+    def _find_special_parent(event_dispatcher, initial=True):
     	"""Recursively crawls up the widget tree to find the first special parent of the given event dispatcher."""
+        if initial:
+            self._find_special_parent(event_dispatcher.parent, initial=False)
+
         if event_dispatcher is Window:
-	    self.special_parent = Window
+	    self._find_special_parent = Window
 	    return
     
         is_special = (
@@ -404,7 +478,7 @@ class ColoredBoxBindingsInPython(ColoredBox):
         if is_special:
 	    self.special_parent = event_dispatcher
         else:
-	    find_special_parent(event_dispatcher.parent)
+	    self._find_special_parent(event_dispatcher.parent, initial=False)
     
     def on_widget_to_left(self, _instance, widget_to_left):
         """Creates the appropriate bindings to widget_to_left. Also finds the special parent of widget_to_left."""
@@ -491,3 +565,5 @@ if __name__ == '__main__':
     TestApp().run()
 
 ```
+
+Safely accessing the position of another widget is perhaps more involved that you might have expected. This is why you should always triple-check whether you should ever need to do this in the first place.
