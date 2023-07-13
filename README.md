@@ -2,10 +2,12 @@
 This README has two goals. The first is to provide documentation about odds and ends of Kivy but the official documentation does not describe in a satisfactory manner. The second is to describe tips and tricks that I have found useful in my own experience with Kivy. I hope this guide will prove to be useful to others.
 
 Chapters:
+- [The bind trick](#the-bind-trick)
 - [GridLayouts in too much Detail](#kivy-gridlayouts-and-size-hint)
 - [Kivy Coordinates](#kivy-coordinates)
 
 # The bind trick
+[Back to title](#kivy-notes)
 
 One of kvlang's triumphs is that it implicitly creates bindings whenever one Kivy property depends on others. Suppose we had a widget `CenteredLabel` that subclasses the Label widget. Also suppose that it renders its text context in the center of the widget, vertically and horizontally. We could then write
 
