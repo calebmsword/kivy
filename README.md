@@ -1,12 +1,141 @@
 # Kivy notes
-This README contains documentation about some odds and ends of Kivy but the official documentation does not describe in a satisfactory manner.
+This README has two goals. The first is to provide documentation about odds and ends of Kivy but the official documentation does not describe in a satisfactory manner. The second is to describe tips and tricks that I have found useful in my own experience with Kivy. I hope this guide will prove to be useful to others.
 
 Chapters:
-- [GridLayouts in too much Detail](#kivy-gridlayouts-in-too-much-detail)
+- [GridLayouts in too much Detail](#kivy-gridlayouts-and-size-hint)
 - [Kivy Coordinates](#kivy-coordinates)
 
+# The bind trick
 
-# Kivy GridLayouts in too much detail
+One of kvlang's triumphs is that it implicitly creates bindings whenever one Kivy property depends on others. Suppose we had a widget `CenteredLabel` that subclasses the Label widget. Also suppose that it renders its text context in the center of the widget, vertically and horizontally. We could then write
+
+```kvlang
+FloatLayout:
+    BoxLayout:
+        Button:
+            id: left_button
+            active: True
+            on_release:
+                self.active = True
+                right_button.active = False
+        Button:
+            id: right_button
+            active: False
+            on_release:
+                self.active = True
+                left_button.active = False
+    CenteredLabel:
+        id: centered_label
+	# the following creates an implicit binding on left_button.active which will update centered_label.text whenever left_button.active changes 
+        text: "left" if left_button.active else "right"
+	# there are bindings on left_button.center, left_button.active, and right_button.center which will update centered_label.center
+        center: left_button.center if left_button.active else right_button.center
+	# there are bindiungs on left_button.size, left_button.active, and right_button.size
+	size: left_button.size if left_button.active else right_button.size
+```
+
+This creates a widget with two buttons. The text is displayed on whichever button has been pressed last. Initially, the text is displayed over the left button. It is important to understand that, if the `active` attribute, `center` attribute, or `size` attribute of left_button or right_button ever changes, then the CenteredLabel instance has its `text`, `center`, and `size` attributes automatically updated. kvlang creates these binding for you to save you time. In fact, kvlang will _always_ do this whenever for every Kivy property which appears in the expression assigned to another Kivy property in kvlang. 
+
+Now suppose we tried to do this in Python. This would require something like
+
+```python
+float_layout = FloatLayout()
+box_layout = BoxLayout()
+
+class ActiveButton(Button):
+    other_button = ObjectProperty(None)
+    active = BooleanProperty(False)
+    def on_release(self, *args):
+        self.active = True
+        self.other_button = False
+
+left_button = ActiveButton()
+right_button = ActiveButton()
+
+left_button.other_button = right_button
+right_button.other_button = left_button
+left_button.active = True
+
+box_layout.add_widget(left_button)
+box_layout.add_widget(right_button)
+float_layout.add_widget(box_layout)
+
+label = CenteredLabel()
+float_layout.add_widget(label)
+
+def update_label(*args):
+    label.text = "left" if left_button.active else "right"
+    label.center = left_button.center if left_button.active else right_button.center
+    label.size = left_button.size if left_button.active else right_button.size
+
+# initialize label properties
+update_label()
+
+# label must be updated whenever the positions, size, or active state of the buttons change
+left_button.bind(active=update_label, center=update_label, size=update_label)
+right_button.bind(active=update_label, center=update_label, size=update_label)
+```
+
+This is much more verbose. It's harder to picture what the widget tree is supposed to be. Also, the binding logic, which seems self-evident, has to be explicitly stated.
+
+Using kvlang tends to make your code easier to write and understand. However, sometimes the calculation for a widget property is quite complex and it doesn't make sense to try to express it in kvlang. An example of when this happened to me is when I had a widget which rendered multiple points on an image, and then each of these points was labeled. I used the following in kvlang to express this:
+
+```kvlang
+<Container>:
+    ImageWithPoints:
+        points: root.points  # the positions of the points is stored in the Container instance
+    Label:
+        text: "1"
+        pos: root.get_nth_pos(1)  # my Container class has a method called get_nth_pos that contains a lot of calculation
+    Label:
+        text: "2"
+        pos: root.get_nth_pos(2)
+```
+
+However, this wasn't quite right--what is the `points` attribute in Container changes? Then the points would shift, as should their labels. But there is no bindings here. The `pos` attributes are assigned the return value of `get_nth_pos` once and then never updated again.
+
+I needed add this binding logic to my code. I could have chosen to implement this purely in Python without kvlang to do this, but I didn't want to lose the clarity afforded to me by kvlang. A simple solution, I realized, was to add a keyword argument to `get_nth_pos`:
+
+```python
+class Container(BoxLayout):
+
+    # this widget contained a lot of stuff that I am skipping over
+
+    def get_nth_pos(self, n, *, bind):
+        # involved calculation
+```
+
+Then I could do the following in kvlang:
+
+```kvlang
+<Container>:
+    ImageWithPoints:
+	id: image
+        points: root.points  # the positions of the points is stored in the Container instance
+    Label:
+        text: "1"
+        pos: root.get_nth_pos(1, bind=[root.points, image.pos, image.size])
+    Label:
+        text: "2"
+        pos: root.get_nth_pos(2, bind=[root.points, image.pos, image.size])
+```
+
+Now, the `pos` attributes of the Label instances are recalculated whenever `root.points`, `image.pos`, or `image.size` changes. Funnily enough, these attributes weren't used in the calculation at all, but their appearance in kvlang caused the bindings to apply.
+
+This trick, which I call the "bind pattern", gives you the best of both worlds. You get concise binding boilderplate written for you, but also are able to abstract complicated logic away from kvlang. It also has the interesting effect of taking the _implicit_ binds and making them _explicit_, without sacrificing the concision kvlang's implicit bindings provide. By reading this code, it's immediately clear exactly which variables kvlang creates bindings to, something that can be easy to forget about sometimes.
+
+This pattern is quite helpful and has saved me a lot of time. It is important that you clearly document the role of the `bind` keyword in a docstring under the Python method to clarify its purpose; otherwise, it may greatly confuse your coworker when they see a keyword argument that seems to do nothing.
+
+The only thing that annoys me about this trick is that my IDE always complains to me that I'm writing a keyword argument that accomplishes nothing. This, of course, isn't true, but PyCharm wasn't built with kvlang in mind so this is currently impossible to avoid. I've wondered if its possible to create a decorator so I can do something like
+
+```python
+    @kvbind
+    get_nth_pos(n)
+```
+
+and then the method automatically gets a `bind` keyword tacked on the end without annoying my IDE. If such a thing is possible I would like to start doing things that way.
+
+# Kivy GridLayouts and size hint
 [Back to title](#kivy-notes)
 
 Useful facts:
