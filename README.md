@@ -318,7 +318,7 @@ widget_b = Widget()
 
 # find widget_a's special parent
 def find_special_parent_of(event_dispatcher, initial=True):
-    # start crawling widget tree at starting widget's parent
+    # start crawling widget tree, starting at widget's parent
     if initial:
         find_special_parent_of(event_dispatcher.parent, initial=False)
     
@@ -349,8 +349,6 @@ if special_parent is not Window:
     special_parent.bind(pos=update_b_pos)
 ```
 
-A more practical example will be shown later.
-
 What if we want to assign positions directly in kvlang? To start, it will be helpful to create the following utility function:
 
 ```python
@@ -361,7 +359,7 @@ def convert_pos(*, input, output):
     return output_parent_coords
 ```
 
-For example, `pos_in_b = convert_pos(input=a, output=b)` returns a list such that `pos_in_b[0]` returns the x value of the converted coordinates and `pos_in_b.[1]` returns the y value of the converted coordinates. However, we can make this a little more declarative with the following simple change:
+For example, `pos_in_b = convert_pos(input=a, output=b)` returns a list such that `pos_in_b[0]` returns the x value of the converted coordinates and `pos_in_b.[1]` returns the y value of the converted coordinates. However, I will also suggest making the following simple change:
 
 ```python
 from kivy.vector import Vector
@@ -375,6 +373,8 @@ def convert_pos(*, input, output):
 ```
 
 With this change, then `pos_in_b = convert_pos(input=a, output=b)` returns a Vector describing the position of `a` in the parent coordinates of `b` and sets the variable `pos_in_b` to a Vector representing this position. `pos_in_b[0]` or `pos_in_b.x` returns the x value of the converted coordinates and `pos_in_b[1]` or `pos_in_b.y` returns the y value of the converted coordinates.
+
+Kivy Vectors are a subclass of Python lists. Therefore, you can treat the return value of `convert_pos` as a list if you want. However, by making it a Vector, we add additional conveniences that an experienced user can choose to take advantage of if they want.
 
 We will also make one more alteration to this method. The reason for this will be clear in a moment.
 
