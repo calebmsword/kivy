@@ -9,7 +9,7 @@ Chapters:
 # The bind trick
 [Back to title](#kivy-notes)
 
-One of kvlang's triumphs is that it implicitly creates bindings whenever one Kivy property depends on others. Suppose we had a widget `CenteredLabel` that subclasses the Label widget. Also suppose that it renders its text context in the center of the widget, vertically and horizontally. We could then write
+One of kvlang's conveniences is that it implicitly creates bindings whenever one Kivy property depends on others. Suppose we had a widget `CenteredLabel` that subclasses the Label widget. Also suppose that it renders its text context in the center of the widget, vertically and horizontally. We could then write
 
 ```kvlang
 FloatLayout:
@@ -96,7 +96,7 @@ Using kvlang tends to make your code easier to write and understand. However, so
 
 However, this wasn't quite right--what is the `points` attribute in Container changes? Then the points would shift, as should their labels. But there is no bindings here. The `pos` attributes are assigned the return value of `get_nth_pos` once and then never updated again.
 
-I needed add this binding logic to my code. I could have chosen to implement this purely in Python without kvlang to do this, but I didn't want to lose the clarity afforded to me by kvlang. A simple solution, I realized, was to add a keyword argument to `get_nth_pos`:
+I needed to add this binding logic to my code. I could have chosen to implement this purely in Python without kvlang to do this, but I didn't want to lose the clarity afforded to me by kvlang. A simple solution, I realized, was to add a keyword argument to `get_nth_pos`:
 
 ```python
 class Container(BoxLayout):
@@ -124,11 +124,11 @@ Then I could do the following in kvlang:
 
 Now, the `pos` attributes of the Label instances are recalculated whenever `root.points`, `image.pos`, or `image.size` changes. Funnily enough, these attributes weren't used in the calculation at all, but their appearance in kvlang caused the bindings to apply.
 
-This trick, which I call the "bind pattern", gives you the best of both worlds. You get concise binding boilderplate written for you, but also are able to abstract complicated logic away from kvlang. It also has the interesting effect of taking the _implicit_ binds and making them _explicit_, without sacrificing the concision kvlang's implicit bindings provide. By reading this code, it's immediately clear exactly which variables kvlang creates bindings to, something that can be easy to forget about sometimes.
+This trick, which I call the "bind pattern" or the "bind trick", gives you the best of both worlds. You get concise binding boilderplate written for you, but also are able to abstract complicated logic away from kvlang. It also has effect of taking what is normally _implicit_ binding logic and making it _explicit_, without sacrificing the concision kvlang's automatic bindings provide. By reading this code, it's more clear than usual exactly which variables kvlang creates bindings to, something that can be easy to forget sometimes. I personally prefer explicit behavior or implicit behavior myself.
 
 This pattern is quite helpful and has saved me a lot of time. It is important that you clearly document the role of the `bind` keyword in a docstring under the Python method to clarify its purpose; otherwise, it may greatly confuse your coworker when they see a keyword argument that seems to do nothing.
 
-The only thing that annoys me about this trick is that my IDE always complains to me that I'm writing a keyword argument that accomplishes nothing. This, of course, isn't true, but PyCharm wasn't built with kvlang in mind so this is currently impossible to avoid. I've wondered if its possible to create a decorator so I can do something like
+The only thing that annoys me about this trick is that my IDE always complains to me that I'm declaring a keyword argument that isn't used in the method. I've wondered if its possible to create a decorator so I can do something like
 
 ```python
     @kvbind
