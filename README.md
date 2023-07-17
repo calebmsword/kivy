@@ -5,6 +5,7 @@ Chapters:
 - [The bind trick](#the-bind-trick)
 - [What size hint means](#what-size-hint-means)
 - [Kivy Coordinates](#kivy-coordinates)
+- [Converting coordinates between widgets](#converting-coordinates-between-widgets)
 
 # The bind trick
 [Back to title](#kivy-notes)
@@ -324,7 +325,6 @@ Subsections:
 - [Defining the coordinate systems](#defining-the-coordinate-systems)
 - [Consequences of the definitions](#consequences-of-the-definitions)
 - [Coordinate transformation API](#coordinate-transformation-api)
-- [Converting coordinates between widgets](#converting-coordinates-between-widgets)
 
 ### Defining the coordinate systems
 [Back to chapter start](#kivy-coordinates)
@@ -485,9 +485,7 @@ For example, `widget_a.to_local(*widget_a.pos)` converts `widget_a`’s position
    - This hack works because, as mentioned in [the previous chapter](#consequences-of-the-definitions), the widget/local coordinates of a parent has the same origin as the parent coordinates of its child.
 
 
-### Converting coordinates between widgets
-[Back to chapter start](#kivy-coordinates)
-
+# Converting coordinates between widgets
 [Back to title](#kivy-notes)
 
 It is a code smell if one widget directly accesses the position of another widget. For example, the following code attempts to place `widget_b` directly next to `widget_a`. 
