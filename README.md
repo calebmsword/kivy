@@ -518,6 +518,8 @@ You'd *think* that the answer is simple. Just convert the other widget's coordin
 widget_a = Widget()
 widget_b = Widget()
 
+# do stuff and place widget_a and widget_b in the widget tree
+
 a_pos_in_window_coords = widget_a.to_window(*widget_a.pos)
 a_pos_in_parent_coords_of_b = widget_b.parent.to_widget(*window_coords)
 
@@ -529,6 +531,8 @@ However, if `widget_a` changes its position, then `widget_b` should also move. S
 ```python
 widget_a = Widget()
 widget_b = Widget()
+
+# do stuff and place widget_a and widget_b in the widget tree
 
 def update_b_pos(*args):
     a_pos_in_window_coords = widget_a.to_window(*widget_a.pos)
