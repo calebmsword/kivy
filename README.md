@@ -80,7 +80,7 @@ right_button.bind(active=update_label, center=update_label, size=update_label)
 
 This is much more verbose. It's harder to picture what the widget tree is supposed to be. Also, the binding logic, which seems self-evident, has to be explicitly stated.
 
-Using kvlang tends to make your code easier to write and understand. However, sometimes the calculation for a widget property is quite complex and it doesn't make sense to try to express it in kvlang. An example of when this happened to me is when I had a widget which rendered multiple points on an image, and then each of these points was labeled. I used the following in kvlang to express this:
+As you can see, kvlang often makes your code easier to write and understand. However, sometimes the calculation for a widget property is quite complex and it doesn't make sense to try to express it in kvlang. An example of when this happened to me is when I had a widget which rendered multiple points on an image, and then each of these points was labeled. I used the following in kvlang to express this:
 
 ```kvlang
 <Container>:
@@ -124,9 +124,7 @@ Then I could do the following in kvlang:
 
 Now, the `pos` attributes of the Label instances are recalculated whenever `root.points`, `image.pos`, or `image.size` changes. Funnily enough, these attributes weren't used in the calculation at all, but their appearance in kvlang caused the bindings to apply.
 
-This trick, which I call the "bind pattern" or the "bind trick", gives you the best of both worlds. You get concise binding boilderplate written for you, but also are able to abstract complicated logic away from kvlang. It also has effect of taking what is normally _implicit_ binding logic and making it _explicit_, without sacrificing the concision kvlang's automatic bindings provide. By reading this code, it's more clear than usual exactly which variables kvlang creates bindings to, something that can be easy to forget sometimes. I personally prefer explicit behavior or implicit behavior myself.
-
-This pattern is quite helpful and has saved me a lot of time. It is important that you clearly document the role of the `bind` keyword in a docstring under the Python method to clarify its purpose; otherwise, it may greatly confuse your coworker when they see a keyword argument that seems to do nothing.
+This trick, which I call the "bind pattern" or the "bind trick", gives you the best of both worlds. You get binding boilderplate written for you while also keeping complicated logic away from kvlang. It also has effect of taking what is normally _implicit_ binding logic and making it _explicit_, without sacrificing the concision kvlang's automatic bindings provide. This pattern is quite helpful and has saved me a lot of time. Note that it is important to document the role of the `bind` keyword in a docstring under the Python method or you may greatly confuse your coworker when they see a keyword argument that seems to do nothing.
 
 The only thing that annoys me about this trick is that my IDE always complains to me that I'm declaring a keyword argument that isn't used in the method. I've wondered if its possible to create a decorator so I can do something like
 
@@ -250,14 +248,14 @@ For StackLayouts, `size_hint` is percent-like. StackLayouts also calculate allot
 
 [Back to title](#kivy-notes)
 
-GridLayouts are by far the most complex Layout in regards to how they listen to `size_hint`. There is a lot to cover, so we will first go over some useful facts regarding GridLayouts.
+GridLayouts are by far the most complex Layout in regards to how they listen to `size_hint`. Most of the time, GridLayouts are flex-grow-like but there are a lot of edge cases and nuances. Since there is so much to cover, so we will first go over some useful facts regarding GridLayouts.
 
 Useful facts:
  - Rows are 0-indexed, so row 0 is the first row, row 1 is the second row, etc. No matter the orientation of the GridLayout (`tb-lr`, `bt-lr`, etc), the **topmost** row is row 0.
  - Columns are also 0-indexed. No matter the orientation of the GridLayout, the **leftmost** column is column 0.
  - GridLayouts create slots for each of their child widgets. The slots have the same height for every row and have the same width for every column. Widgets are placed in the bottom left of each slot. 
- - If the widget has a value for `size_hint_y` that is not `None`, then it will take the full height of the slot. If the `size_hint_y` is `None`, then it is possible for the widget to take less than or more than the height of the slot.
-   - (There are expections to this if the child has values for `size_hint_x_min` or other similar attributes. But we'll discuss those another time). 
+ - If the widget has a value for `size_hint_y` that is not `None`, then it will take the full height of the slot. If the `size_hint_y` is `None`, then it is possible for the widget to take less than or more than the height of the slot. A similar rule is followed for `size_hint_x`.
+   - (There are expections to this if the child has values for `size_hint_y_min` or other similar attributes. But we'll discuss those another time). 
  - GridLayouts calculate a minimum height for each of its rows. The GridLayout ensures that the height of the slots in each row is at least the minimum height, even if the sum of minimum heights exceeds the height of the GridLayout. The GridLayout will even draw its children outside of the Window if it has to.
  -  When keeping track of these behaviors, it is extremely useful to remember the following default values for properties of GridLayouts and widgets:
     - GridLayout:
@@ -270,7 +268,7 @@ Useful facts:
       - `size`: `(100, 100)`
         - And consequently, `height`: `100`
 
-We will now describe the process for how `size_hint_x` is calculated. The behavior of `size_hint_y` follows in the natural way. Just copy-paste what is written below, but replace every "row" with "column", every `row` with `col`, every "height" with "width", every "vertical" with "horizontal", and so on.
+We will now describe the process for how `size_hint_y` is calculated. The behavior of `size_hint_x` follows in the natural way. Just copy-paste what is written below, but replace every "row" with "column", every `row` with `col`, every "height" with "width", every "vertical" with "horizontal", and so on.
 
 The process:
  - If `cols` is `None` and `rows` is `None`:
@@ -290,7 +288,7 @@ The process:
        - If the `height` exceeds the height of the slot, then the widget will exceed the space of the slot.
    
  - If `force_row_default` is set to `False`:
-   - The slot height for each row is the sum of the "minimum height" calculated for that row and a fraction of the "allotted height" for that row.
+   - The slot height for each row is the sum of the "minimum height" calculated for that row and a fraction of the "allotted height" of the GridLayout.
      - Minimum Height:
        - The GridLayout finds the largest of the following three values for the `n`th row and sets that value as the minimum height of that row.
          - If the key `n` exists in `rows_minimum`, then it uses the value mapped by `n`. If the key `n` is not in `rows_minimum`, then negative infinity.
@@ -621,7 +619,7 @@ With this change, then `pos_in_b = convert_pos(input=a, output=b)` returns a Vec
 
 Kivy Vectors are a subclass of Python lists. Therefore, you can treat the return value of `convert_pos` as a list if you want. However, by making it a Vector, we add additional conveniences that an experienced user can choose to take advantage of if they want.
 
-We will also make one more alteration to this method. The reason for this will be clear in a moment.
+Let's make one more adjustment to the method. We will use the [bind trick](#bind-trick) since we are abstracting logic away from kvlang. We'll also include a docstring:
 
 ```python
 from kivy.vector import Vector
@@ -640,7 +638,9 @@ def convert_pos(*, input, output, bind):
     return Vector(output_parent_coords)
 ```
 
-The reason for introducing the `bind` keyword in the argument list is to allow the user to create the relavant bindings when using `convert_pos` in kvlang. For example, the following code places one widget directly to the right of another.
+This is the final version of the method. Now, let's see it in action. 
+
+The following code places one widget directly to the right of another:
 
 ```kvlang
 #: import convert_pos utils.convert_pos
@@ -662,9 +662,9 @@ Widget:
 	# y: convert_pos(input=a, output=b, bind=[a.pos, a.size, rl.pos, rl.size])[1]
 ```
 
-Of course, instead of introduction a bind keyword, we could create the signature `convert_pos(*args, input, output)` and just pass whatever positional parameters are necessary. But the former method is more declarative.
+All of this is pretty involved, isn't it? That's why you should always triple-check whether you ought to do this in the first place.
 
-All of this was pretty involved and deserves a replicable example. To do so, create the project structure
+To conclude, we will show a replicable example that will show both approaches for accessing the position of anyother widget. To do so, create the project structure
 
 ```
 my_project/
@@ -810,5 +810,3 @@ if __name__ == '__main__':
     TestApp().run()
 
 ```
-
-Safely accessing the position of another widget is perhaps more involved that you might have expected. This is why you should always triple-check whether you should ever need to do this in the first place.
