@@ -568,10 +568,8 @@ def find_special_parent_of(event_dispatcher, initial=True):
         find_special_parent_of(event_dispatcher.parent, initial=False)
     
     # base case
-    if event_dispatcher:
-        return event_dispatcher
-
     if (
+    event_dispatcher is Window or
     isinstance(event_dispatcher, RelativeLayout) or
     isinstance(event_dispatcher, ScrollView) or
     isinstance(event_dispatcher, Scatter) or
