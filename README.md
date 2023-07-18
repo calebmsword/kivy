@@ -100,7 +100,7 @@ FloatLayout:
     BoxLayout:
         Button:
             id: left_button
-            active: True
+            active: False
             on_release:
                 self.active = True
                 right_button.active = False
@@ -116,11 +116,11 @@ FloatLayout:
         text: "left" if left_button.active else "right"
 	# there are bindings on left_button.center, left_button.active, and right_button.center which will update centered_label.center
         center: left_button.center if left_button.active else right_button.center
-	# there are bindiungs on left_button.size, left_button.active, and right_button.size
-	size: left_button.size if left_button.active else right_button.size
+	# there are bindings on left_button.size, left_button.active, and right_button.size
+        size: left_button.size if left_button.active else right_button.size
 ```
 
-This creates a widget with two buttons. The text is displayed on whichever button has been pressed last. Initially, the text is displayed over the left button. It is important to understand that, if the `active` attribute, `center` attribute, or `size` attribute of left_button or right_button ever changes, then the CenteredLabel instance has its `text`, `center`, and `size` attributes automatically updated. kvlang creates these binding for you to save you time. In fact, kvlang will _always_ do this whenever for every Kivy property which appears in the expression assigned to another Kivy property in kvlang. 
+This creates a widget with two buttons. Initially, there is not text displayed, but after a button has been pressed, text is displayed on whichever button has been pressed last. It is important to understand that, if the `active` attribute, `center` attribute, or `size` attribute of left_button or right_button ever changes, then the CenteredLabel instance has its `text`, `center`, and `size` attributes automatically updated. kvlang creates these binding for you to save you time. In fact, kvlang will _always_ do this whenever for every Kivy property which appears in the expression assigned to another Kivy property in kvlang. 
 
 Now suppose we tried to do this in Python. This would require something like
 
@@ -140,7 +140,6 @@ right_button = ActiveButton()
 
 left_button.other_button = right_button
 right_button.other_button = left_button
-left_button.active = True
 
 box_layout.add_widget(left_button)
 box_layout.add_widget(right_button)
@@ -162,7 +161,7 @@ left_button.bind(active=update_label, center=update_label, size=update_label)
 right_button.bind(active=update_label, center=update_label, size=update_label)
 ```
 
-This is much more verbose. It's harder to picture what the widget tree is supposed to be. Also, the binding logic, which seems self-evident, has to be explicitly stated.
+The advantage of creating this app with kvlang should be clear. Using pure Python is more verbose, makes the widget tree harder to picture, and forces us to explictly declare the binding logic, which is self-evident in this case.
 
 As you can see, kvlang often makes your code easier to write and understand. However, sometimes the calculation for a widget property is quite complex and it doesn't make sense to try to express it in kvlang. An example of when this happened to me is when I had a widget which rendered multiple points on an image, and then each of these points was labeled. I used the following in kvlang to express this:
 
@@ -707,7 +706,7 @@ Let's make one more adjustment to the method. We will use the [bind trick](#bind
 ```python
 from kivy.vector import Vector
 
-def convert_pos(*, input, output, bind):
+def convert_pos(*, input, output, bind=None):
     """
     Takes the pos attribute of input and returns a Vector representing
     that position in the parent coordinates of output.
@@ -787,27 +786,27 @@ class ColoredBoxBindingsInPython(ColoredBox):
         if widget_to_left is not None:
             left_pos = convert_pos(input=widget_to_left, output=self)
             self.pos = left_pos + (widget_to_left.width, 0)
-    
-    def _find_special_parent(event_dispatcher, initial=True):
-    	"""Recursively crawls up the widget tree to find the first special parent of the given event dispatcher."""
+
+    def _find_special_parent(self, event_dispatcher, initial=True):
+        """Recursively crawls up the widget tree to find the first special parent of the given event dispatcher."""
         if initial:
             self._find_special_parent(event_dispatcher.parent, initial=False)
 
         if event_dispatcher is Window:
-	    self._find_special_parent = Window
-	    return
-    
+            self._find_special_parent = Window
+            return
+
         is_special = (
-	    isinstance(event_dispatcher, RelativeLayout) or
-	    isinstance(event_dispatcher, ScrollView) or
-	    isinstance(event_dispatcher, Scatter) or
-	    isinstance(event_dispatcher, ScatterLayout))
-        
+                isinstance(event_dispatcher, RelativeLayout) or
+                isinstance(event_dispatcher, ScrollView) or
+                isinstance(event_dispatcher, Scatter) or
+                isinstance(event_dispatcher, ScatterLayout))
+
         if is_special:
-	    self.special_parent = event_dispatcher
+            self.special_parent = event_dispatcher
         else:
-	    self._find_special_parent(event_dispatcher.parent, initial=False)
-    
+            self._find_special_parent(event_dispatcher.parent, initial=False)
+
     def on_widget_to_left(self, _instance, widget_to_left):
         """Creates the appropriate bindings to widget_to_left. Also finds the special parent of widget_to_left."""
         self._find_special_parent(widget_to_left)
@@ -817,7 +816,7 @@ class ColoredBoxBindingsInPython(ColoredBox):
             widget_to_left.bind(pos=self._update_pos)
 
     def on_special_parent(self, _instance, special_parent):
-    	"""Creates the appropriate bindings to the special parent of widget_to_left."""
+        """Creates the appropriate bindings to the special parent of widget_to_left."""
         if special_parent is not None:
             special_parent.bind(size=self._update_pos)
             if special_parent is not Window:
@@ -868,7 +867,7 @@ Widget:
         widget_to_left: green_box
         bg_color: BLUE
         text: "correct"
-    
+
 
 <ColoredBox>:
     size_hint: None, None
