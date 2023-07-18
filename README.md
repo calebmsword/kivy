@@ -405,7 +405,6 @@ The process:
 
 Subsections:
 - [Defining the coordinate systems](#defining-the-coordinate-systems)
-- [Consequences of the definitions](#consequences-of-the-definitions)
 - [Coordinate transformation API](#coordinate-transformation-api)
 
 ### Defining the coordinate systems
@@ -457,27 +456,6 @@ In summary:
  - **parent coordinates**: Every widget has its own parent coordinates. If `widget_a` has one of the four "special" widgets (RelativeLayout, Scatter, ScatterLayout, ScrollView) in its parent stack, then the origin of the parent coordinates of `widget_a` is located at the bottom left of the first special widget in `widget_a`'s parent stack. If `widget_a` does not have any "special" widgets in its parent stack, then its parent coordinates have the same origin as the application's window coordinates. The `pos` attribute of a widget is in that widget's parent coordinates (as are the `x` and `y` attributes).
  - **relative coordinates**: Every widget has its own relative coordinates. The origin of `widget_a`'s relative coordinates is located at the bottom-left of `widget_a`.
  - **widget/local coordinates**: Every widget has its own widget/local coordinates. The widget/local coordinates of `widget_a` are the parent coordinates of the immediate children of `widget_a`. This means that if `widget_a` is a "special" widget, then the origin of its widget/coordinates is the same as that of its relative coordinates. If `widget_a` is not a "special" widget, then the origin of its widget/local coordinates is the same as its parent coordinates.
-
-### Consequences of the definitions
-[Back to chapter start](#kivy-coordinates)
-
-[Back to title](#kivy-notes)
-
-- It is interesting to notice that, if there are no special widgets in the application, then window coordinates, widget/local coordinates, and parent coordinates for all widgets have the same origin. 
-- It is also interesting to notice that the widget/local coordinates of the immediate parent of `widget_a` are the same as the parent coordinates of `widget_a`. That is, given 
-
-```kvlang
-BoxLayout: 
-    Widget: 
-        id: widget_parent 
-        Widget: 
-            id: widget_a
-```
-
-the widget/local coordinate system of the widget with id `widget_parent` has the same origin as the parent coordinate system of `widget_a`. 
- - It is also interesting to notice that, if `widget_a` is a special widget, then its relative coordinates and widget/local coordinates are the same. 
-
- 
 
 ### Coordinate transformation API
 [Back to chapter start](#kivy-coordinates)
