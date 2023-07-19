@@ -898,17 +898,17 @@ This oversimplifies the process, but 99% of the time, this is how you use Kivy's
 
 **Long answer**:
 
-Kivy has a method found at `kivy.resources.resource_find`. It takes one argument, a string, and returns a string representing the absolute filepath of the file found (or it returns `None` if no file isfound).  So, how does `resource_find(str)` resolve the filepath represented by the string `str`? 
+Kivy has a method found at `kivy.resources.resource_find`. It takes one argument, a string, and returns a string representing the absolute filepath of the file found (or it returns `None` if no file is found).  So, how does `resource_find(str)` resolve the filepath represented by the string `str`? 
 
-Kivy will first attempt to resolve the string as an absolute filepath. If a file is found when the string is interpreted that way, then `resource_find` returns the string passed to it.
+`resource_find(str)` first attempts to resolve `str` as an absolute filepath. If a file is found at the absolute filepath represented by `str`, then `resource_find(str)` simply returns `str`.
 
-If the string, as an absolute filepath, does not represent any file on the machine, `resource_find` will append the string to a list of absolute filepaths. If, at any point, the resulting concatentation represents the absolute filepath of a file on the machine, then that concantenation is returned. The various relative filepaths will be attempted in the following order:
+If the string, as an absolute filepath, does not represent any file on the machine, `resource_find(str)` will see if `str` is a file contained within one of many directories contained in a list of absolute filepaths. If, at any point, these directorires contains a file whose name matches `str`, then the absolute filepath of that file is returned. `resource_find` will attempt the following directories in the listed order:
 
- 1. `<kivy_data_directory>/fonts`. The Kivy data directory is, by default, located in a file called `data` in the top level of the Kivy package. However, if you create the environment variable `KIVY_DATA_DIR` on your machine, the path represented by that variable will be the new location of the kivy data directory.
+ 1. `<kivy_data_directory>/fonts`. (The Kivy data directory is, by default, located in a file called `data` in the top level of the Kivy package. However, if you create the environment variable `KIVY_DATA_DIR` on your machine, the path represented by that variable will be the new location of the Kivy data directory.)
  2. Whereever fonts are stored on your local machine. On Windows, this will looks like `C:\WINDOWS\Fonts`.
- 3. The parent directory of the kivy data directory. (Why not just the kivy data directory? This is so that, if you try to access resources in the data directory, you write something like `"data/my_image.png"` or `"my_custom_data_directory/my_image.png"`. This will make it clear to yourself (and your coworkers) whenever you're trying to access the kivy data directory.)
- 4. The location of the Kivy package. When running Kivy as a desktop app, this will look something like `C:\Users\<your_username>\AppData\Local\Programs\Python\<your_python_version>\lib\site-packages\kivy`. This lets you access the default Kivy data directory even if you create your own.
- 5. If Kivy is being run on iOS, then an additional path is attempted here. It will look for a directory called `YourApp` in the parent directory of the script which starts of the Kivy app. On any other platform, this path is skipped.
+ 3. The parent directory of the Kivy data directory. (Why not just the Kivy data directory? This is so that, if you try to access resources in the Kivy data directory, you write something like `"data/my_image.png"` or `"my_custom_data_directory/my_image.png"`. This will make it clear to yourself (and your coworkers) whenever you're trying to access the Kivy data directory.)
+ 4. The location of the Kivy package. (When running Kivy as a desktop app, this will look something like `C:\Users\<your_username>\AppData\Local\Programs\Python\<your_python_version>\lib\site-packages\kivy`. Note that this lets you access the default Kivy data directory even if you create your own.)
+ 5. If Kivy is being run on iOS, it will look for a directory called `YourApp` in the parent directory of the script which starts of the Kivy app. On any other platform, this path is skipped.
  6. The parent directory of the script which starts the Kivy app.
  7. The directory in which the Python command was excecuted which started the Kivy app.
 
