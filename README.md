@@ -886,7 +886,7 @@ if __name__ == '__main__':
 
 [Back to title](#kivy-notes)
 
-When you write `my_image = Image(source="my_image.png")`, how does Kivy resolve the filepath represented by "my_image.png"?
+When you write `my_image = Image(source="my_image.png")`, how does Kivy resolve the filepath represented by `"my_image.png"`?
 
 **Short answer**:
 
