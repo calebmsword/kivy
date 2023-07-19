@@ -12,7 +12,7 @@ To be written:
  - `size_hint_min` and `size_hint_max`
  - The canvas tree
  - Things I wish I knew about canvases when I first started using Kivy
- - When to use RelativeLayouts (and why it's almost never a good idea)
+ - When to use RelativeLayouts (and why it's usually bad practice)
  - Sharing data between widgets
  - How Kivy finds resources
  - style.kv
