@@ -8,6 +8,17 @@ Chapters:
 - [Kivy Coordinates](#kivy-coordinates)
 - [Converting coordinates between widgets](#converting-coordinates-between-widgets)
 
+To be written:
+ - `size_hint_min` and `size_hint_max`
+ - The canvas tree
+ - Things I wish I knew about canvases when I first started using Kivy
+ - When to use RelativeLayouts (and why it's almost never a good idea)
+ - Sharing data between widgets
+ - How Kivy finds resources
+ - style.kv
+ - RecycleView
+ - How the event loop works
+
 # The Root Widget is not the actual root
 [Back to title](#kivy-notes)
 
