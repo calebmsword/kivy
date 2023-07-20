@@ -888,11 +888,19 @@ if __name__ == '__main__':
 
 When you write `my_image = Image(source="my_image.png")`, how does Kivy resolve the filepath represented by `"my_image.png"`?
 
+Before we continue, we should establish what the "Kivy data directory" is. If you don't know, the Kivy data directory is is a generic "data dump" directory through which one can put images, logos, and even kv files which "style" the widgets in your application. By default, the Kivy data directory is located within the Kivy package itself (on Windows, for example, this will look like `C:\Users\<your_username>\AppData\Local\Programs\Python\<your_python_version>\lib\site-packages\kivy\data`). But you can make the Kivy data directory any generic directory by assigning a filepath to the `KIVY_DATA_DIR` environment variable on your machine.
+
+Now, let's answer the question.
+
 **Short answer**:
 
-Kivy will first attempt to resolve the string as an absolute filepath. If a file is found when the string is interpreted that way, that is the file chosen.
+Kivy will attempt to resolve the string as an absolute filepath. If a file is found when the string is interpreted that way, that is the file chosen.
 
-If the string, as an absolute filepath, does not represent any file on the machine, then Kivy will interpret the string as a relative filepath starting from the directory containing the script which started the Kivy app. If no file is found in this manner, then an error is raised.
+If the string, as an absolute filepath, does not represent any file on the machine, then Kivy will check the parent of the Kivy data directory. It will then see if the string represents some relative filepath from the parent of the Kivy data directory. (Why not just the Kivy data directory? This is so because, if you try to access resources in the Kivy data directory, you write something like `"data/my_image.png"` or `"my_custom_data_directory/my_image.png"`. This will make it clear to yourself (and your coworkers) whether or not you're trying to access the Kivy data directory.)
+
+If that doesn't yield a file, then Kivy will check the directory containing the Python script which started the Kivy application. It will see if the string is a relative filepath from this location.
+
+If no file is found, then different widgets have different behaviors. Some have a default behavior that is then performed, other may log a warning message or error message, and some will raise an error.
 
 This oversimplifies the process, but 99% of the time, this is how you use Kivy's resource finder.
 
@@ -902,12 +910,12 @@ Kivy has a method found at `kivy.resources.resource_find`. It takes one argument
 
 `resource_find(str)` first attempts to resolve `str` as an absolute filepath. If a file is found at the absolute filepath represented by `str`, then `resource_find(str)` simply returns `str`.
 
-If the string, as an absolute filepath, does not represent any file on the machine, `resource_find(str)` will see if `str` is a file contained within one of many directories contained in a list of absolute filepaths. If, at any point, these directorires contains a file whose name matches `str`, then the absolute filepath of that file is returned. `resource_find` will attempt the following directories in the listed order:
+If the string, as an absolute filepath, does not represent any file on the machine, `resource_find(str)` will see if `str` is a filepath relative to one of many directories contained in a list of absolute filepaths. If, at any point, there is a file that is relative to one of these filepath, then the absolute filepath of that file is returned. `resource_find` will attempt the following directories in the listed order:
 
- 1. `<kivy_data_directory>/fonts`. (The Kivy data directory is, by default, located in a file called `data` in the top level of the Kivy package. However, if you create the environment variable `KIVY_DATA_DIR` on your machine, the path represented by that variable will be the new location of the Kivy data directory.)
- 2. Whereever fonts are stored on your local machine. On Windows, this will looks like `C:\WINDOWS\Fonts`.
- 3. The parent directory of the Kivy data directory. (Why not just the Kivy data directory? This is so that, if you try to access resources in the Kivy data directory, you write something like `"data/my_image.png"` or `"my_custom_data_directory/my_image.png"`. This will make it clear to yourself (and your coworkers) whenever you're trying to access the Kivy data directory.)
- 4. The location of the Kivy package. (When running Kivy as a desktop app, this will look something like `C:\Users\<your_username>\AppData\Local\Programs\Python\<your_python_version>\lib\site-packages\kivy`. Note that this lets you access the default Kivy data directory even if you create your own.)
+ 1. `<kivy_data_directory>/fonts`.
+ 2. Where fonts are stored on your local machine. On Windows, this look like `C:\WINDOWS\Fonts`.
+ 3. The parent directory of the Kivy data directory. 
+ 4. The location of the Kivy package. (Note that this lets you access the default Kivy data directory even if you create your own.)
  5. If Kivy is being run on iOS, it will look for a directory called `YourApp` in the parent directory of the script which starts of the Kivy app. On any other platform, this path is skipped.
  6. The parent directory of the script which starts the Kivy app.
  7. The directory in which the Python command was excecuted which started the Kivy app.
@@ -915,7 +923,7 @@ If the string, as an absolute filepath, does not represent any file on the machi
 Caveats:
  - If you use the method `kivy.resources.resource_add_path`, you will another path to the list of relative paths. The most recently added path has the highest priority.
  - The method `kivy.resources.resource_remove_path` can remove a path from the list of relative paths.
- - The "font path"s will only be included in the list ofrelative paths if your application includes a widget which renders text. Otherwise, the first relative filepath will be the parent directory of the kivy data directory.
+ - The "font path"s will only be included in the list of relative paths if your application includes a widget which renders text. Otherwise, the first relative filepath checked will be the parent directory of the kivy data directory.
  - The list of attempted relative path origins is stored as a Python list. You can access it from the variable `kivy.resources.resource_paths`. (Note that you're not supposed to access this list directly. In 99% of use cases, `resource_add_path` and `resource_remove_path` will give you adequate control of the list of relative paths.)
  - If the string starts with the characters `"atlas://"`, then `kivy.resources.resource_find` will simply return the given string. Kivy's internals handle this edge case appropriately, and you will almost never need to worry about this.
- - If `resource_find(str)` would return `None` but `str` starts with the characters `"data:"`, then `resource_find` will return `str` instead of `None`. I do not know why this behavior exists, but it is unlikely you will have to worry about this.
+ - If `resource_find(str)` would return `None` but `str` starts with the characters `"data:"`, then `resource_find` will return `str` instead of `None`. I do not know why this behavior exists, but it is unlikely you will ever have to worry about it.
