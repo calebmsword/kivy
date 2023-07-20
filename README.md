@@ -107,6 +107,12 @@ Unlike the `add_widget` method available to the `Widget` class, `Window::add_wid
 One of kvlang's conveniences is that it implicitly creates bindings whenever one Kivy property depends on others. Suppose we had a widget `CenteredLabel` that subclasses the Label widget. Also suppose that it renders its text context in the center of the widget, vertically and horizontally. We could then write
 
 ```kvlang
+<CenteredLabel@Label>:
+    size_hint: None, None
+    text_size: self.size
+    halign: "center"
+    valign: "center"
+
 FloatLayout:
     BoxLayout:
         Button:
@@ -126,25 +132,36 @@ FloatLayout:
 	# the following creates an implicit binding on left_button.active which will update centered_label.text whenever left_button.active changes 
         text: "left" if left_button.active else "right"
 	# there are bindings on left_button.center, left_button.active, and right_button.center which will update centered_label.center
-        center: left_button.center if left_button.active else right_button.center
+        center: left_button.pos if left_button.active else right_button.pos
 	# there are bindings on left_button.size, left_button.active, and right_button.size
         size: left_button.size if left_button.active else right_button.size
 ```
 
-This creates a widget with two buttons. Initially, there is not text displayed, but after a button has been pressed, text is displayed on whichever button has been pressed last. It is important to understand that, if the `active` attribute, `center` attribute, or `size` attribute of left_button or right_button ever changes, then the CenteredLabel instance has its `text`, `center`, and `size` attributes automatically updated. kvlang creates these binding for you to save you time. In fact, kvlang will _always_ do this whenever for every Kivy property which appears in the expression assigned to another Kivy property in kvlang. 
+This creates a widget with two buttons. Initially, there is not text displayed, but after a button has been pressed, text is displayed on whichever button has been pressed last. It is important to understand that, if the `active` attribute, `pos` attribute, or `size` attribute of left_button or right_button ever changes, then the CenteredLabel instance has its `text`, `center`, and `size` attributes automatically updated. kvlang creates these binding for you to save you time. In fact, kvlang will _always_ do this whenever for every Kivy property which appears in the expression assigned to another Kivy property in kvlang. 
 
 Now suppose we tried to do this in Python. This would require something like
 
 ```python
+class CenteredLabel(Label):
+    pass
+
+Builder.load_string(f"""
+<CenteredLabel>:
+    size_hint: None, None
+    text_size: self.size
+    halign: "center"
+    valign: "center"
+""")
+
 float_layout = FloatLayout()
 box_layout = BoxLayout()
 
 class ActiveButton(Button):
     other_button = ObjectProperty(None)
     active = BooleanProperty(False)
-    def on_release(self, *args):
+    def on_release(self, *_args):
         self.active = True
-        self.other_button = False
+        self.other_button.active = False
 
 left_button = ActiveButton()
 right_button = ActiveButton()
@@ -159,20 +176,22 @@ float_layout.add_widget(box_layout)
 label = CenteredLabel()
 float_layout.add_widget(label)
 
-def update_label(*args):
-    label.text = "left" if left_button.active else "right"
-    label.center = left_button.center if left_button.active else right_button.center
-    label.size = left_button.size if left_button.active else right_button.size
-
-# initialize label properties
-update_label()
+def update_label(*_args):
+    if left_button.active:
+        label.text = "left"
+        label.size = left_button.size
+        label.pos = left_button.pos
+    elif right_button.active:
+        label.text = "right"
+        label.size = right_button.size
+        label.pos = right_button.pos
 
 # label must be updated whenever the positions, size, or active state of the buttons change
-left_button.bind(active=update_label, center=update_label, size=update_label)
-right_button.bind(active=update_label, center=update_label, size=update_label)
+left_button.bind(active=update_label, pos=update_label, size=update_label)
+right_button.bind(active=update_label, pos=update_label, size=update_label)
 ```
 
-The advantage of creating this app with kvlang should be clear. Using pure Python is more verbose, makes the widget tree harder to picture, and forces us to explictly declare the binding logic, which is self-evident in this case.
+The advantage of creating this app with kvlang should be clear. Using pure Python is more verbose, makes the widget tree harder to picture, and forces us to explictly declare the binding logic.
 
 As you can see, kvlang often makes your code easier to write and understand. However, sometimes the calculation for a widget property is quite complex and it doesn't make sense to try to express it in kvlang. An example of when this happened to me is when I had a widget which rendered multiple points on an image, and then each of these points was labeled. I used the following in kvlang to express this:
 
