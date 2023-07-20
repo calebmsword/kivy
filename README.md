@@ -137,7 +137,7 @@ FloatLayout:
         size: left_button.size if left_button.active else right_button.size
 ```
 
-This creates a widget with two buttons. Initially, there is not text displayed, but after a button has been pressed, text is displayed on whichever button has been pressed last. It is important to understand that, if the `active` attribute, `pos` attribute, or `size` attribute of left_button or right_button ever changes, then the CenteredLabel instance has its `text`, `center`, and `size` attributes automatically updated. kvlang creates these binding for you to save you time. In fact, kvlang will _always_ do this whenever for every Kivy property which appears in the expression assigned to another Kivy property in kvlang. 
+This creates a widget with two buttons. Initially, there is not text displayed, but after a button has been pressed, text is displayed on whichever button has been pressed last. It is important to understand that, if the `active` attribute, `pos` attribute, or `size` attribute of left_button or right_button ever changes, then the CenteredLabel instance has its `text`, `pos`, and `size` attributes automatically updated. kvlang creates these binding for you to save you time. In fact, kvlang will _always_ do this whenever for every Kivy property which appears in the expression assigned to another Kivy property in kvlang. 
 
 Now suppose we tried to do this in Python. This would require something like
 
