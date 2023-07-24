@@ -65,7 +65,7 @@ The result is surprising:
 
 ![image](https://github.com/calebmsword/kivy/assets/85499281/f82d8537-203b-4efd-886f-0d4ec278fd5b)
 
-Evidently, the root widget has a parent, and it so happens to be the [global Window object](https://kivy.org/doc/stable/api-kivy.core.window.html). If you poke around the documentation for the `Window` object, you'll find that it has a method called `add_widget`. Wait a minute... can we add a second "root widget" to a running app?
+Evidently, the root widget has a parent, and it so happens to be the [Window object](https://kivy.org/doc/stable/api-kivy.core.window.html). If you poke around the documentation for the `Window` object, you'll find that it has a method called `add_widget`. Wait a minute... can we add a second "root widget" to a running app?
 
 Let's try it:
 
@@ -93,13 +93,17 @@ The result:
 
 <img src="https://github.com/calebmsword/kivy/assets/85499281/3ed90734-6fd3-4bb3-ac33-b5cd8e3bcb7b" width="600px" />
 
-Looks like the Window object can have multiple children. Well, it seems like the name "root widget" is a misnomer.
+It ends up that the Window object _can_ have multiple children. (Seems like the name "root widget" is a misnomer!)
 
-So, all of this begs the question: _why_ is Kivy architectured this way? The reason is that widgets added by the `Window` are always drawn above any widget contained in the tree starting from the root widget. Therefore, adding a widget to the `Window` guarantees that a widget is displayed on top of every other widget. The standard use case for this is when you want to render a popup window. In fact, the [ModalView](https://kivy.org/doc/stable-2.0.0/api-kivy.uix.popup.html) and [PopUp](https://kivy.org/doc/stable-2.0.0/api-kivy.uix.popup.html) widgets are implemented in this way.
+So, all of this begs the question: _why_ is Kivy architectured this way? The reason is that the most recently added child of `Window` **is drawn on top of every other widget in the application**. The standard use case for this is when you want to display a popup window. In fact, the [ModalView](https://kivy.org/doc/stable-2.0.0/api-kivy.uix.popup.html) and [PopUp](https://kivy.org/doc/stable-2.0.0/api-kivy.uix.popup.html) widgets are implemented in this way.
 
 The `Window` also has a `remove_widget` method that you can use to remove the widget from view.
 
 Unlike the `add_widget` method available to the `Widget` class, `Window::add_widget` does not have an optional index argument, meaning that `Window` will always draw the most recently added Widget on top of everything else.
+
+My tips for those who start to use `Window.add_widget` in their apps: 
+ - Try your best to have no more than two widgets as children of `Window` (i.e., the root widget and some popup widget). You don't want to run into a situation where multiple widgets are children of `Window` and then you struggle to make one widget display over another.
+ - Always use `Window.remove_widget` whenever you want the widget to no longer displayed. Don't, for example, set a popup window's opacity to zero when the user exits the popup. (This will help you follow the previous rule).
 
 # The bind trick
 [Back to title](#kivy-notes)
@@ -237,16 +241,34 @@ Then I could do the following in kvlang:
 
 Now, the `pos` attributes of the Label instances are recalculated whenever `root.points`, `image.pos`, or `image.size` changes. Funnily enough, these attributes weren't used in the calculation at all, but their appearance in kvlang caused the bindings to apply.
 
-This trick, which I call the "bind pattern" or the "bind trick", gives you the best of both worlds. You get binding boilderplate written for you while also keeping complicated logic away from kvlang. It also has effect of taking what is normally _implicit_ binding logic and making it _explicit_, without sacrificing the concision kvlang's automatic bindings provide. This pattern is quite helpful and has saved me a lot of time. Note that it is important to document the role of the `bind` keyword in a docstring under the Python method or you may greatly confuse your coworker when they see a keyword argument that seems to do nothing.
+This trick, which I call the "bind trick", gives you the best of both worlds. You get binding boilderplate written for you while also keeping complicated logic away from kvlang. It also has effect of taking what is normally _implicit_ binding logic and making it _explicit_, without sacrificing the concision kvlang's automatic bindings provide.
 
-The only thing that annoys me about this trick is that my IDE always complains to me that I'm declaring a keyword argument that isn't used in the method. I've wondered if its possible to create a decorator so I can do something like
+Now, there is one thing we can do to make this trick even better. The problem with the current approach is that my IDE complains to me that I'm declaring a keyword argument that isn't used in the method. However, we can create a decorator which adds the bind keyword instead. For example, create the decorator
 
 ```python
-    @kvbind
-    get_nth_pos(n)
+from functools import wraps
+
+def kvbind(f):
+    @wraps(f)
+    def wrapper(*args, bind=None, **kwargs):
+        return f(*args, **kwargs)
+
+    return wrapper
 ```
 
-and then the method automatically gets a `bind` keyword tacked on the end without annoying my IDE. If such a thing is possible I would like to start doing things that way.
+and then we can write
+
+```python
+class Container(BoxLayout):
+
+    # this widget contained a lot of stuff that I am skipping over
+
+    @kvbind
+    def get_nth_pos(self, n):
+        # involved calculation
+```
+
+and then the method automatically gets a `bind` keyword tacked on the end without annoying your IDE. Note that, by using the `wraps` decorator in `kvind`, we preserve the metadata of the `get_nth_pos` (this includes, among other things, the name of the function and its docstring).
 
 # What size hint means
 [Back to title](#kivy-notes)
