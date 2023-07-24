@@ -731,7 +731,7 @@ With this change, then `pos_in_b = convert_pos(input=a, output=b)` returns a Vec
 
 Kivy Vectors are a subclass of Python lists. Therefore, you can treat the return value of `convert_pos` as a list if you want. However, by making it a Vector, we add additional conveniences that an experienced user can choose to take advantage of if they want.
 
-Let's make one more adjustment to the method. We will use the [bind trick](#bind-trick) since we are abstracting logic away from kvlang. We'll also include a docstring:
+Let's make one more adjustment to the method. We will use the [bind trick](#the-bind-trick) since we are abstracting logic away from kvlang. We'll also include a docstring:
 
 ```python
 from kivy.vector import Vector
