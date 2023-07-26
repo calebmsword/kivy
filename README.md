@@ -6,9 +6,10 @@ Note that is a resource for **intermediate** Kivy developers. If you are new to 
  - The official [Kivy programming guide](https://kivy.org/doc/stable/guide/basic.html) written by the Kivy developers themselves.
  - The following sections of the official Kivy API documentation:
    - The [Kivy language documention](https://kivy.org/doc/stable/api-kivy.lang.html).
+   - The [Kivy properties documentation](https://kivy.org/doc/stable/api-kivy.properties.html).
    - The [coordinate system section](https://kivy.org/doc/stable/api-kivy.uix.relativelayout.html#coordinate-systems) from the RelativeLayout documentation. This is the only official description of Kivy's coordinate systems.
    - The [Kivy clock documentation](https://kivy.org/doc/stable/api-kivy.clock.html).
-   - The [Kivy properties documentation](https://kivy.org/doc/stable/api-kivy.properties.html).
+   
 
 Chapters:
 - [The root widget is not the actual root](#the-root-widget-is-not-the-actual-root)
