@@ -952,7 +952,7 @@ Now, let's answer the question. Kivy has a method found at `kivy.resources.resou
 		<li>The parent directory of the Kivy data directory.</li>
 		<li>The parent directory of the default Kivy data directory.</li>
 		<li>If Kivy is being run on iOS, it will look for a directory called <code>YourApp</code> in the parent directory of the script which starts of the Kivy app. On any other platform, this path is skipped.</li>
-		<li>The parent directory of the script which starts the Kivy app.</li>
+		<li>The directory containing the Python script which starts the Kivy app.</li>
 		<li>The current working directory of the process running the Python script which started the app.</li>
 	</ol>
 </ol>
