@@ -961,7 +961,9 @@ The Kivy internals which use `resource_find` have different behaviors when `reso
 
 If this list of directories is not suitable for your circumstances, you can modify the list of paths with `kivy.resources.resource_add_path` or `kivy.resources.resource_remove_path`. Note that the most recently added path is always searched _first_. The list of paths is stored in the Python list `kivy.resources.resource_paths` and the list is searched in reverse, starting from the last element and working towards the first. However, you're not supposed to access this list directly. In 99% of use cases, `resource_add_path` and `resource_remove_path` will give you adequate control of `resource_paths`.
 
+You might wonder why Kivy searches the _parent_ of the data directory instead of the data directory itself. The reason is that, to access something the data directory, you can write something like `my_image = Image(source="data/my_image.png")`, something that will work on any platform given that the environment is configured correctly.
+
 Obscure edge cases:
- - Paths i and ii are only included in the list of paths if your application includes a widget which renders text.
+ - Paths i and ii are only included in the list of paths if your application includes a widget which renders text (or more specifically, if the [core provider](https://kivy.org/doc/stable/guide/architecture.html#core-providers-and-input-providers) which renders text is used).
  - If the string starts with the characters `"atlas://"`, then `resource_find` will simply return the given string. Kivy's internals which render images handle this edge case appropriately, so it's unlikely you will ever have to worry about this. If you are curious what this is for, see [this section of the Kivy docs](https://kivy.org/doc/stable-2.0.0/api-kivy.atlas.html).
  - If `resource_find(str)` would return `None` but `str` starts with the characters `"data:"`, then `resource_find` will return `str` instead of `None`. I do not know why this behavior exists.
