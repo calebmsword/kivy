@@ -328,7 +328,7 @@ if __name__ == "__main__":
 
 The latter solution makes it clear why root.num_presses is present in kvlang. It isn't used to calculate the text at all, but instead forces the text property to be recalculated whenever root.num_presses changes. By creating a `bind` keyword, we hope to make it *explicit* to the user that that binding is in play which adheres to the zen of Python (explicit is always better than implicit). I also like placing the bound Kivy properties in a list to indicate that multiple properties could be bound to if necessary.
 
-So which of these approaches is best? I think either the first approach or the last is best because the binding behavior is explicit. The second approach, while simplest, is "magical" and can obscure to the user what is happening.
+So which of these approaches is best? I think either the first approach or the last is best because the binding behavior is explicit.
 
 One issue with the "bind trick" is that the method signature has an argument that has no usage in the method. Not only will this cause most IDE's to raise a warning to the user, but the code will be incomprehensible to another user without proper documentation. So, if you're going to use the bind trick, I think the best approach is to create a decorator like the following:
 
