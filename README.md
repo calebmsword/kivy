@@ -13,7 +13,7 @@ Note that is a resource for **intermediate** Kivy developers. If you are new to 
 
 Chapters:
 - [The root widget is not the actual root](#the-root-widget-is-not-the-actual-root)
-- [The bind trick](#the-bind-trick)
+- [The bind trick](#implicit-bindings-and-the-bind-trick)
 - [What size hint means](#what-size-hint-means)
 - [Kivy Coordinates](#kivy-coordinates)
 - [Converting coordinates between widgets](#converting-coordinates-between-widgets)
@@ -115,170 +115,272 @@ My tips for those who start to use `Window.add_widget` in their apps:
  - Try your best to have no more than two widgets as children of `Window` (i.e., the root widget and some popup widget). You don't want to run into a situation where multiple widgets are children of `Window` and then you struggle to make one widget display over another.
  - Always use `Window.remove_widget` whenever you want the widget to no longer displayed. Don't, for example, set a popup window's opacity to zero when the user exits the popup. (This will help you follow the previous rule).
 
-# The bind trick
+# implicit bindings and the bind trick
 [Back to title](#kivy-notes)
 
-One of kvlang's conveniences is that it implicitly creates bindings whenever one Kivy property depends on others. Suppose we had a widget `CenteredLabel` that subclasses the Label widget. Also suppose that it renders its text context in the center of the widget, vertically and horizontally. We could then write
-
-```kvlang
-<CenteredLabel@Label>:
-    size_hint: None, None
-    text_size: self.size
-    halign: "center"
-    valign: "center"
-
-FloatLayout:
-    BoxLayout:
-        Button:
-            id: left_button
-            active: False
-            on_release:
-                self.active = True
-                right_button.active = False
-        Button:
-            id: right_button
-            active: False
-            on_release:
-                self.active = True
-                left_button.active = False
-    CenteredLabel:
-        id: centered_label
-	# the following creates an implicit binding on left_button.active which will update centered_label.text whenever left_button.active changes 
-        text: "left" if left_button.active else "right"
-	# there are bindings on left_button.center, left_button.active, and right_button.center which will update centered_label.center
-        center: left_button.pos if left_button.active else right_button.pos
-	# there are bindings on left_button.size, left_button.active, and right_button.size
-        size: left_button.size if left_button.active else right_button.size
-```
-
-This creates a widget with two buttons. Initially, there is not text displayed, but after a button has been pressed, text is displayed on whichever button has been pressed last. It is important to understand that, if the `active` attribute, `pos` attribute, or `size` attribute of left_button or right_button ever changes, then the CenteredLabel instance has its `text`, `pos`, and `size` attributes automatically updated. kvlang creates these binding for you to save you time. In fact, kvlang will _always_ do this whenever for every Kivy property which appears in the expression assigned to another Kivy property in kvlang. 
-
-Now suppose we tried to do this in Python. This would require something like
+Let us create a button in kivy that informs us whether it has been pressed an even or odd number of times.
 
 ```python
-class CenteredLabel(Label):
-    pass
+from kivy.app import App
+from kivy.lang import Builder
 
-Builder.load_string(f"""
-<CenteredLabel>:
-    size_hint: None, None
-    text_size: self.size
-    halign: "center"
-    valign: "center"
+root_widget = Builder.load_string(f"""
+AnchorLayout:
+    num_presses: 0
+    Button:
+        size_hint: None, None
+        size: 400, 50
+        text: "pressed an even number of times" if root.num_presses % 2 == 0 else "pressed an odd number of times"
+        on_release: root.num_presses += 1
 """)
 
-float_layout = FloatLayout()
-box_layout = BoxLayout()
+class TestApp(App):
+    def build(self):
+        return root_widget
 
-class ActiveButton(Button):
-    other_button = ObjectProperty(None)
-    active = BooleanProperty(False)
-    def on_release(self, *_args):
-        self.active = True
-        self.other_button.active = False
-
-left_button = ActiveButton()
-right_button = ActiveButton()
-
-left_button.other_button = right_button
-right_button.other_button = left_button
-
-box_layout.add_widget(left_button)
-box_layout.add_widget(right_button)
-float_layout.add_widget(box_layout)
-
-label = CenteredLabel()
-float_layout.add_widget(label)
-
-def update_label(*_args):
-    if left_button.active:
-        label.text = "left"
-        label.size = left_button.size
-        label.pos = left_button.pos
-    elif right_button.active:
-        label.text = "right"
-        label.size = right_button.size
-        label.pos = right_button.pos
-
-# label must be updated whenever the positions, size, or active state of the buttons change
-left_button.bind(active=update_label, pos=update_label, size=update_label)
-right_button.bind(active=update_label, pos=update_label, size=update_label)
+if __name__ == "__main__":
+    TestApp().run()
 ```
 
-The advantage of creating this app with kvlang should be clear. Using pure Python is more verbose, makes the widget tree harder to picture, and forces us to explictly declare the binding logic.
+For this to work, realize that Kivy creates an *implicit binding* to the `num_presses` Kivy property so that whenever `num_presses` changes, the `text` property is recalculated. The value of implicit bindings in that it makes code concise and simpler to write. But the downside is that it is easy to forget that the implicit binding exists which can lead to mistakes when you refactor widgets written in kvlang.
 
-As you can see, kvlang often makes your code easier to write and understand. However, sometimes the calculation for a widget property is quite complex and it doesn't make sense to try to express it in kvlang. An example of when this happened to me is when I had a widget which rendered multiple points on an image, and then each of these points was labeled. I used the following in kvlang to express this:
-
-```kvlang
-<Container>:
-    ImageWithPoints:
-        points: root.points  # the positions of the points is stored in the Container instance
-    Label:
-        text: "1"
-        pos: root.get_nth_pos(1)  # my Container class has a method called get_nth_pos that contains a lot of calculation
-    Label:
-        text: "2"
-        pos: root.get_nth_pos(2)
-```
-
-However, this wasn't quite right--what is the `points` attribute in Container changes? Then the points would shift, as should their labels. But there is no bindings here. The `pos` attributes are assigned the return value of `get_nth_pos` once and then never updated again.
-
-I needed to add this binding logic to my code. I could have chosen to implement this purely in Python without kvlang to do this, but I didn't want to lose the clarity afforded to me by kvlang. A simple solution, I realized, was to add a keyword argument to `get_nth_pos`:
+Suppose that you want the button to display "Press me!" when it hasn't been pressed yet. In kvlang, this would require a nested ternary operator:
 
 ```python
-class Container(BoxLayout):
+from kivy.app import App
+from kivy.lang import Builder
 
-    # this widget contained a lot of stuff that I am skipping over
+root_widget = Builder.load_string(f"""
+AnchorLayout:
+    num_presses: 0
+    Button:
+        size_hint: None, None
+        size: 400, 50
+        text: "Press me!" if root.num_presses == 0 else "pressed an even number of times" if root.num_presses % 2 == 0 else "pressed an odd number of times"
+        on_release: root.num_presses += 1
+""")
 
-    def get_nth_pos(self, n, *, bind):
-        # involved calculation
+
+class TestApp(App):
+    def build(self):
+        return root_widget
+
+
+if __name__ == "__main__":
+    TestApp().run()
 ```
 
-Then I could do the following in kvlang:
+This is difficult ro read and will be difficult to refactor further. Therefore, it will make sense to extract the logic for determining the button text into Python. Very often in this situation, a new Kivy user will make the following incorrect attempt:
 
-```kvlang
-<Container>:
-    ImageWithPoints:
-	id: image
-        points: root.points  # the positions of the points is stored in the Container instance
-    Label:
-        text: "1"
-        pos: root.get_nth_pos(1, bind=[root.points, image.pos, image.size])
-    Label:
-        text: "2"
-        pos: root.get_nth_pos(2, bind=[root.points, image.pos, image.size])
+```python
+from kivy.app import App
+from kivy.lang import Builder
+from kivy.properties import NumericProperty
+from kivy.uix.anchorlayout import AnchorLayout
+
+Builder.load_string(f"""
+<RootWidget>:
+    num_presses: 0
+    Button:
+        size_hint: None, None
+        size: 400, 50
+        text: root.get_button_text()
+        on_release: root.num_presses += 1
+""")
+
+class RootWidget(AnchorLayout):
+    num_presses = NumericProperty(0)
+
+    def get_button_text(self):
+        if self.num_presses == 0:
+            return "Press me!"
+        elif self.num_presses % 2 == 0:
+            return "pressed an even number of times"
+        else:
+            return "pressed an odd number of times"
+
+class TestApp(App):
+    def build(self):
+        return RootWidget()
+
+if __name__ == "__main__":
+    TestApp().run()
 ```
 
-Now, the `pos` attributes of the Label instances are recalculated whenever `root.points`, `image.pos`, or `image.size` changes. Funnily enough, these attributes weren't used in the calculation at all, but their appearance in kvlang caused the bindings to apply.
+This won't work because the binding to num_presses is now gone. Whoops!
 
-This trick, which I call the "bind trick", gives you the best of both worlds. You get binding boilderplate written for you while also keeping complicated logic away from kvlang. It also has effect of taking what is normally _implicit_ binding logic and making it _explicit_, without sacrificing the concision kvlang's automatic bindings provide.
+There are many ways you can fix this mistake. The first is to provide a weakref in the RootWidget class to the button widget and then explicitly call `get_button_text` whenever `num_presses` changes:
 
-Now, there is one thing we can do to make this trick even better. The problem with the current approach is that my IDE complains to me that I'm declaring a keyword argument that isn't used in the method. However, we can create a decorator which adds the bind keyword instead. For example, create the decorator
+```python
+from kivy.app import App
+from kivy.lang import Builder
+from kivy.properties import NumericProperty
+from kivy.properties import ObjectProperty
+from kivy.uix.anchorlayout import AnchorLayout
+
+Builder.load_string(f"""
+<RootWidget>:
+    btn: btn
+    num_presses: 0
+    Button:
+        id: btn
+        size_hint: None, None
+        size: 400, 50
+        text: root.get_button_text()
+        on_release: root.num_presses += 1
+""")
+
+class RootWidget(AnchorLayout):
+
+    btn = ObjectProperty(None)
+    num_presses = NumericProperty(0)
+
+    def on_num_presses(self, *args):
+        self.btn.text = self.get_button_text()
+
+    def get_button_text(self):
+        if self.num_presses == 0:
+            return "Press me!"
+        elif self.num_presses % 2 == 0:
+            return "pressed an even number of times"
+        else:
+            return "pressed an odd number of times"
+
+class TestApp(App):
+    def build(self):
+        return RootWidget()
+```
+
+A second is to *reintroduce* the implicit binding by making num_presses an argument in get_button_text:
+
+```python
+from kivy.app import App
+from kivy.lang import Builder
+from kivy.properties import NumericProperty
+from kivy.uix.anchorlayout import AnchorLayout
+
+Builder.load_string(f"""
+<RootWidget>:
+    num_presses: 0
+    Button:
+        size_hint: None, None
+        size: 400, 50
+        text: root.get_button_text(root.num_presses)
+        on_release: root.num_presses += 1
+""")
+
+class RootWidget(AnchorLayout):
+    num_presses = NumericProperty(0)
+
+    def get_button_text(self, num_presses):
+        if num_presses == 0:
+            return "Press me!"
+        elif num_presses % 2 == 0:
+            return "pressed an even number of times"
+        else:
+            return "pressed an odd number of times"
+
+class TestApp(App):
+    def build(self):
+        return RootWidget()
+
+if __name__ == "__main__":
+    TestApp().run()
+```
+
+The final solution, which I call the "bind trick", is to make what was an implicit binding explicit in the following way:
+
+```python
+from kivy.app import App
+from kivy.lang import Builder
+from kivy.properties import NumericProperty
+from kivy.uix.anchorlayout import AnchorLayout
+
+Builder.load_string(f"""
+<RootWidget>:
+    num_presses: 0
+    Button:
+        size_hint: None, None
+        size: 400, 50
+        text: root.get_button_text(bind=[root.num_presses])
+        on_release: root.num_presses += 1
+""")
+
+class RootWidget(AnchorLayout):
+
+    num_presses = NumericProperty(0)
+
+    def get_button_text(self, *, bind=None):
+        if self.num_presses == 0:
+            return "Press me!"
+        elif self.num_presses % 2 == 0:
+            return "pressed an even number of times"
+        else:
+            return "pressed an odd number of times"
+
+class TestApp(App):
+    def build(self):
+        return RootWidget()
+
+if __name__ == "__main__":
+    TestApp().run()
+```
+
+The latter solution makes it clear why root.num_presses is present in kvlang. It isn't used to calculate the text at all, but instead forces the text property to be recalculated whenever root.num_presses changes. By creating a `bind` keyword, we hope to make it *explicit* to the user that that binding is in play which adheres to the zen of Python (explicit is always better than implicit). I also like placing the bound Kivy properties in a list to indicate that multiple properties could be bound to if necessary.
+
+So which of these approaches is best? I think either the first approach or the last is best because the binding behavior is explicit. The second approach, while simplest, is "magical" and can obscure to the user what is happening.
+
+One issue with the "bind trick" is that the method signature has an argument that has no usage in the method. Not only will this cause most IDE's to raise a warning to the user, but the code will be incomprehensible to another user without proper documentation. So, if you're going to use the bind trick, I think the best approach is to create a decorator like the following:
 
 ```python
 from functools import wraps
 
-def kvbind(f):
-    @wraps(f)
-    def wrapper(*args, bind=None, **kwargs):
-        return f(*args, **kwargs)
+from kivy.app import App
+from kivy.lang import Builder
+from kivy.properties import NumericProperty
+from kivy.uix.anchorlayout import AnchorLayout
 
+def kvbind(function):
+    """A function decorator which stitches the keyword "bind" onto the function.
+    This can be used to create explicit bindings to Kivy properties in 
+    kvlang."""
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        if "bind" in kwargs:
+            kwargs.pop("bind")
+        return function(*args, **kwargs)
     return wrapper
-```
 
-and then we can write
+Builder.load_string(f"""
+<RootWidget>:
+    num_presses: 0
+    Button:
+        size_hint: None, None
+        size: 400, 50
+        text: root.get_button_text(bind=[root.num_presses])
+        on_release: root.num_presses += 1
+""")
 
-```python
-class Container(BoxLayout):
-
-    # this widget contained a lot of stuff that I am skipping over
+class RootWidget(AnchorLayout):
+    num_presses = NumericProperty(0)
 
     @kvbind
-    def get_nth_pos(self, n):
-        # involved calculation
+    def get_button_text(self):
+        if self.num_presses == 0:
+            return "Press me!"
+        elif self.num_presses % 2 == 0:
+            return "pressed an even number of times"
+        else:
+            return "pressed an odd number of times"
+
+class TestApp(App):
+    def build(self):
+        return RootWidget()
+
+if __name__ == "__main__":
+    TestApp().run()
 ```
 
-and then the method automatically gets a `bind` keyword tacked on the end without annoying your IDE. Note that, by using the `wraps` decorator in `kvind`, we preserve the metadata of the `get_nth_pos` (this includes, among other things, the name of the function and its docstring).
 
 # What size hint means
 [Back to title](#kivy-notes)
