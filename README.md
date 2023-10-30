@@ -170,7 +170,7 @@ if __name__ == "__main__":
     TestApp().run()
 ```
 
-This is difficult ro read and will be difficult to refactor further. Therefore, it will make sense to extract the logic for determining the button text into Python. Very often in this situation, a new Kivy user will make the following incorrect attempt:
+This is difficult ro read and will be difficult to refactor further. Therefore, it will make sense to extract the logic for determining the button text into Python. We might try to refactor the widget in the following incorrect way:
 
 ```python
 from kivy.app import App
@@ -207,9 +207,9 @@ if __name__ == "__main__":
     TestApp().run()
 ```
 
-This won't work because the binding to num_presses is now gone. Whoops!
+But this no longer works. The button always says "pressed an even number of times". The reason this no longer works is that there is no bindings to the Button widget's `text` property. `root.get_button_text()` is performed once to intialize the text value and then is never called again.  
 
-There are many ways you can fix this mistake. The first is to provide a weakref in the RootWidget class to the button widget and then explicitly call `get_button_text` whenever `num_presses` changes:
+There are many ways you can fix this mistake. The first is to provide a reference in the RootWidget class to the button widget and then explicitly call `get_button_text` whenever `num_presses` changes:
 
 ```python
 from kivy.app import App
@@ -288,7 +288,11 @@ if __name__ == "__main__":
     TestApp().run()
 ```
 
-The final solution, which I call the "bind trick", is to make what was an implicit binding explicit in the following way:
+Personally, I prefer the former solution. While the second approach is simpler, additional code is worth it if the bindings are explicit.
+
+### An evil hack
+
+There is a third approach which I call the "bind trick". The bind trick exploits the way implicit bindings are created in kvlang to make them explicit.
 
 ```python
 from kivy.app import App
@@ -326,11 +330,9 @@ if __name__ == "__main__":
     TestApp().run()
 ```
 
-The latter solution makes it clear why root.num_presses is present in kvlang. It isn't used to calculate the text at all, but instead forces the text property to be recalculated whenever root.num_presses changes. By creating a `bind` keyword, we hope to make it *explicit* to the user that that binding is in play which adheres to the zen of Python (explicit is always better than implicit). I also like placing the bound Kivy properties in a list to indicate that multiple properties could be bound to if necessary.
+The bind keyword in `RootWidget::get_button_text` is not actually used by the method, but we pass a list of Kivy properties to `bind` in kvlang anyway. Because of how implicit bindings are implemented in Kivy, this automatically binds the expression assigned to the Button `text` property so that it recalculates whenever any Kivy property assigned to `bind` changes. While this solution is likely an unintended exploit of kvlang, the approach is concise without sacrificing explicitness.
 
-So which of these approaches is best? I think either the first approach or the last is best because the binding behavior is explicit.
-
-One issue with the "bind trick" is that the method signature has an argument that has no usage in the method. Not only will this cause most IDE's to raise a warning to the user, but the code will be incomprehensible to another user without proper documentation. So, if you're going to use the bind trick, I think the best approach is to create a decorator like the following:
+One issue with the "bind trick" is that the method signature has an argument that has no usage in the method. Not only will this cause most modern IDE's to raise a warning to the user, it will also make it awkward to properly document the method. So, if you're going to use the bind trick, an evil hack is to create a decorator like the following:
 
 ```python
 from functools import wraps
@@ -341,9 +343,8 @@ from kivy.properties import NumericProperty
 from kivy.uix.anchorlayout import AnchorLayout
 
 def kvbind(function):
-    """A function decorator which stitches the keyword "bind" onto the function.
-    This can be used to create explicit bindings to Kivy properties in 
-    kvlang."""
+    """A function decorator which effectively stitches the keyword "bind" onto the function.
+    This can be used to create explicit bindings to Kivy properties in kvlang."""
     @wraps(function)
     def wrapper(*args, **kwargs):
         if "bind" in kwargs:
@@ -381,6 +382,7 @@ if __name__ == "__main__":
     TestApp().run()
 ```
 
+If the bind trick seems too "hacky" to you, there is no need to use it. Just use one of the other two methods described here are fully adequate. 
 
 # What size hint means
 [Back to title](#kivy-notes)
